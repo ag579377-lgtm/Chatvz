@@ -1,16 +1,23 @@
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import pg from "pg";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { WebSocketServer } from "ws";
+import multer from "multer";
 
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "../uploads");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const storage = multer.diskStorage({ destination: (_req, _file, cb) => cb(null, UPLOAD_DIR), filename: (_req, file, cb) => cb(null, Date.now() + "-" + crypto.randomUUID() + path.extname(file.originalname).toLowerCase()) });
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024, files: 10 }, fileFilter: (_req, file, cb) => cb(null, /^image\\/(jpeg|png|webp|gif)$/i.test(file.mimetype)) });
 
 if (!process.env.DATABASE_URL) {
   console.warn("DATABASE_URL is not set. Set it before starting the server.");
@@ -30,6 +37,7 @@ const wss = new WebSocketServer({ server });
 
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(path.join(__dirname, "../public")));
+app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "7d" }));
 
 async function query(text, params = []) {
   return pool.query(text, params);
@@ -45,6 +53,7 @@ async function initDb() {
       gender TEXT NOT NULL DEFAULT 'd',
       city TEXT DEFAULT '',
       about TEXT DEFAULT '',
+      avatar_url TEXT DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE UNIQUE INDEX IF NOT EXISTS users_nick_lower_idx ON users (LOWER(nick));
@@ -63,6 +72,9 @@ async function initDb() {
     );
 
     CREATE INDEX IF NOT EXISTS messages_room_id_id_idx ON messages(room_id, id);
+
+    CREATE TABLE IF NOT EXISTS profile_images(id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,url TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+    CREATE INDEX IF NOT EXISTS profile_images_user_id_idx ON profile_images(user_id);
 
     CREATE TABLE IF NOT EXISTS direct_messages(
       id BIGSERIAL PRIMARY KEY,
@@ -97,7 +109,7 @@ const online = new Map();
 
 async function userPublic(id) {
   const r = await query(
-    "SELECT id,nick,age,gender,city,about FROM users WHERE id=$1",
+    "SELECT id,nick,age,gender,city,about,avatar_url FROM users WHERE id=$1",
     [id]
   );
   return r.rows[0] || null;
@@ -209,6 +221,41 @@ app.put("/api/me", auth, async (req, res) => {
   res.json(await userPublic(req.user.id));
 });
 
+app.get("/api/users/:id/gallery", auth, async (req, res) => {
+  const r = await query("SELECT id,url,created_at FROM profile_images WHERE user_id=$1 ORDER BY id DESC", [Number(req.params.id)]);
+  res.json(r.rows);
+});
+
+app.post("/api/me/avatar", auth, upload.single("image"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Bitte ein gültiges Bild hochladen." });
+  const url = "/uploads/" + req.file.filename;
+  await query("UPDATE users SET avatar_url=$1 WHERE id=$2", [url, req.user.id]);
+  res.json({ url });
+});
+
+app.post("/api/me/gallery", auth, upload.array("images", 10), async (req, res) => {
+  const files = req.files || [];
+  if (!files.length) return res.status(400).json({ error: "Keine Bilder hochgeladen." });
+  const rows = [];
+  for (const file of files) {
+    const url = "/uploads/" + file.filename;
+    const r = await query("INSERT INTO profile_images(user_id,url) VALUES($1,$2) RETURNING id,url,created_at", [req.user.id, url]);
+    rows.push(r.rows[0]);
+  }
+  res.json(rows);
+});
+
+app.delete("/api/me/gallery/:id", auth, async (req, res) => {
+  const r = await query("DELETE FROM profile_images WHERE id=$1 AND user_id=$2 RETURNING url", [Number(req.params.id), req.user.id]);
+  if (!r.rows[0]) return res.status(404).json({ error: "Bild nicht gefunden." });
+  fs.rm(path.join(UPLOAD_DIR, path.basename(r.rows[0].url)), { force: true }, () => {});
+  res.json({ ok: true });
+});
+
+app.post("/api/chat-image", auth, upload.single("image"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Bitte ein gültiges Bild hochladen." });
+  res.json({ url: "/uploads/" + req.file.filename });
+});
 app.get("/api/rooms", auth, async (req, res) => {
   const r = await query("SELECT id,name FROM rooms ORDER BY id");
   res.json(r.rows);
