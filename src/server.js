@@ -109,6 +109,13 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS direct_messages_pair_idx
       ON direct_messages(sender_id, receiver_id, id);
 
+    CREATE TABLE IF NOT EXISTS room_message_reads(
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+      last_read_message_id BIGINT NOT NULL DEFAULT 0,
+      PRIMARY KEY(user_id, room_id)
+    );
+
     CREATE TABLE IF NOT EXISTS direct_message_reads(
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       partner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -348,6 +355,36 @@ app.get("/api/rooms", auth, async (req, res) => {
     [u?.state ? "Regional · " + u.state : ""]
   );
   res.json(r.rows);
+});
+
+app.get("/api/room-notifications", auth, async (req,res) => {
+  const r = await query(
+    `SELECT room_id, MAX(id) AS last_id
+     FROM messages
+     GROUP BY room_id`
+  );
+  const reads = await query(
+    `SELECT room_id,last_read_message_id
+     FROM room_message_reads
+     WHERE user_id=$1`,
+    [req.user.id]
+  );
+  const readMap = new Map(reads.rows.map(x=>[Number(x.room_id),Number(x.last_read_message_id||0)]));
+  res.json(r.rows.map(x=>({room_id:Number(x.room_id),has_new:Number(x.last_id)>Number(readMap.get(Number(x.room_id))||0)})));
+});
+
+app.post("/api/rooms/:id/read", auth, async (req,res) => {
+  const roomId=Number(req.params.id);
+  if(!Number.isInteger(roomId)||roomId<=0)return res.status(400).json({error:"Ungültiger Raum."});
+  const r=await query(`SELECT COALESCE(MAX(id),0) AS last_id FROM messages WHERE room_id=$1`,[roomId]);
+  await query(
+    `INSERT INTO room_message_reads(user_id,room_id,last_read_message_id)
+     VALUES($1,$2,$3)
+     ON CONFLICT(user_id,room_id)
+     DO UPDATE SET last_read_message_id=GREATEST(room_message_reads.last_read_message_id,EXCLUDED.last_read_message_id)`,
+    [req.user.id,roomId,Number(r.rows[0].last_id||0)]
+  );
+  res.json({ok:true});
 });
 
 app.get("/api/rooms/:id/messages", auth, async (req, res) => {
