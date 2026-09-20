@@ -203,6 +203,7 @@ app.get("/api/users", auth, async (req, res) => {
     `SELECT id,nick,age,gender,city,about,avatar_url
      FROM users
      WHERE id<>$1 AND (nick ILIKE $2 OR city ILIKE $2)
+       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=users.id)
      ORDER BY nick
      LIMIT 100`,
     [req.user.id, `%${q}%`]
@@ -359,6 +360,11 @@ wss.on("connection", async (ws, req) => {
           const to = Number(x.to);
           const text = String(x.text || "").trim().slice(0, 1000);
           if (!to || (!text && !x.imageUrl) || String(to) === ws.userId) return;
+          const blocked = await query(
+            "SELECT 1 FROM blocks WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1) LIMIT 1",
+            [ws.userId, to]
+          );
+          if (blocked.rows.length) return;
 
           const r = await query(
             `INSERT INTO direct_messages(sender_id,receiver_id,text,image_url)
