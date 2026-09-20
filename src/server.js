@@ -293,6 +293,16 @@ app.get("/api/users", auth, async (req, res) => {
   })));
 });
 
+app.get("/api/favorites", auth, async (req, res) => {
+  const r = await query(`SELECT u.id,u.nick,u.age,u.gender,u.state,u.about,u.avatar_url
+    FROM favorites f JOIN users u ON u.id=f.target_id
+    WHERE f.user_id=$1
+      AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=u.id)
+    ORDER BY f.created_at DESC, u.nick
+    LIMIT 100`, [req.user.id]);
+  res.json(r.rows.map(u => ({...u, online:(online.get(String(u.id))?.size||0)>0})));
+});
+
 app.put("/api/me", auth, async (req, res) => {
   const { age, state, about } = req.body || {};
   if (!Number.isInteger(age) || age < 18 || age > 99)
