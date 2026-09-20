@@ -1,4 +1,4 @@
-# ChatVZ – Render + PostgreSQL
+# ChatiNova – Render + PostgreSQL
 
 Diese Version ersetzt SQLite durch PostgreSQL und ist für einen einfachen kostenlosen Render-Test vorbereitet.
 
