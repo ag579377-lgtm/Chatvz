@@ -1,26 +1,161 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatVZ</title>
-<style>
-body{font:14px Arial;margin:0;background:#f2f2f2;color:#222}.top{background:#7423a8;color:#fff;padding:12px 18px;font-size:20px;font-weight:bold}.wrap{max-width:1000px;margin:18px auto;padding:0 10px}.grid{display:grid;grid-template-columns:180px 1fr;gap:12px}.box{background:#fff;border:1px solid #ccc;margin-bottom:12px}.box h3{margin:0;padding:9px;background:#eee;border-bottom:1px solid #ddd;font-size:14px}.body{padding:10px}button{background:#7b2cbf;color:#fff;border:1px solid #642092;border-radius:3px;padding:8px 12px;cursor:pointer}button.alt{background:#eee;color:#222;border-color:#bbb}input,textarea{padding:9px;border:1px solid #bbb;border-radius:3px;width:100%;box-sizing:border-box}.rooms button{display:block;width:100%;text-align:left;background:#fff;color:#333;border:0;border-bottom:1px solid #eee;border-radius:0}.chat{height:550px;display:flex;flex-direction:column}.msgs{flex:1;overflow:auto;padding:10px;background:#fafafa}.msg{padding:5px 0}.msg b{color:#7020a0}.send{display:flex;gap:7px;padding:8px;border-top:1px solid #ddd}.send input{flex:1}.muted{color:#777}.user{padding:8px;border-bottom:1px solid #eee}.online{color:#168a35}@media(max-width:700px){.grid{grid-template-columns:1fr}.rooms{display:none}}
-</style></head><body><div id="app"></div><script>
-let token=localStorage.token||"", me=null, ws=null, room=null, dmTarget=null;
-const api=async(url,opt={})=>{opt.headers={...(opt.headers||{}),...(token?{Authorization:"Bearer "+token}:{})};let r=await fetch(url,opt),j=await r.json();if(!r.ok)throw Error(j.error||"Fehler");return j};
-const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-function loginView(){app.innerHTML=`<div class=wrap style="max-width:420px;margin-top:70px"><div class=box><h3>ChatVZ – Anmeldung</h3><div class=body><p class=muted>18+ Community</p><input id=ln placeholder=Nickname><br><br><input id=lp type=password placeholder=Passwort><br><br><button onclick=login()>Einloggen</button> <button class=alt onclick=registerView()>Registrieren</button></div></div></div>`}
-function registerView(){app.innerHTML=`<div class=wrap style="max-width:420px;margin-top:50px"><div class=box><h3>Registrierung</h3><div class=body><input id=rn placeholder=Nickname><br><br><input id=rp type=password placeholder="Passwort (min. 8 Zeichen)"><br><br><input id=ra type=number min=18 placeholder=Alter><br><br><input id=rc placeholder=Ort><br><br><button onclick=register()>Konto erstellen</button> <button class=alt onclick=loginView()>Zurück</button></div></div></div>`}
-async function login(){try{let x=await api("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick:ln.value,password:lp.value})});token=x.token;localStorage.token=token;me=x.user;boot()}catch(e){alert(e.message)}}
-async function register(){try{let x=await api("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick:rn.value,password:rp.value,age:+ra.value,gender:"d",city:rc.value})});token=x.token;localStorage.token=token;me=x.user;boot()}catch(e){alert(e.message)}}
-async function boot(){me=await api("/api/me");let rooms=await api("/api/rooms");connect();home(rooms)}
-function connect(){ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+location.host+"?token="+encodeURIComponent(token));ws.onmessage=e=>{let x=JSON.parse(e.data);if(x.type==="room_message"){if(room)msgs.innerHTML+=`<div class=msg><b>${esc(x.message.nick)}:</b> ${esc(x.message.text)}</div>`;msgs.scrollTop=msgs.scrollHeight}if(x.type==="dm"){if(dmTarget&&String(x.message.sender_id)===String(dmTarget))dmList.innerHTML+=`<div class=msg><b>${esc(x.message.nick)}:</b> ${esc(x.message.text)}</div>`}}}
-async function home(rooms){app.innerHTML=`<div class=top>ChatVZ</div><div class=wrap><div class=grid><div><div class=box><h3>Menü</h3><div class=body><button onclick=users()>Benutzer</button><br><br><button onclick=profile()>Mein Profil</button><br><br><button onclick=logout()>Logout</button></div></div><div class="box rooms"><h3>Chaträume</h3><div class=body id=roomlist>${rooms.map(r=>`<button onclick="join(${r.id})">${esc(r.name)}</button>`).join("")}</div></div></div><div id=main><div class=box><h3>Willkommen ${esc(me.nick)}</h3><div class=body>Wähle links einen Chatraum.</div></div></div></div></div>`}
-async function join(id){room=id;let rows=await api("/api/rooms/"+id+"/messages");main.innerHTML=`<div class="box chat"><h3>Chatraum</h3><div id=msgs class=msgs>${rows.map(m=>`<div class=msg><b>${esc(m.nick)}:</b> ${esc(m.text)}</div>`).join("")}</div><div class=send><input id=chatInput placeholder="Nachricht…" onkeydown="if(event.key==='Enter')send()"><button onclick=send>Senden</button></div></div>`;ws.send(JSON.stringify({type:"join_room",roomId:id}));msgs.scrollTop=msgs.scrollHeight}
-function send(){let t=chatInput.value.trim();if(t){ws.send(JSON.stringify({type:"room_message",text:t}));chatInput.value=""}}
-async function users(){let us=await api("/api/users");main.innerHTML=`<div class=box><h3>Benutzer</h3><div class=body><input id=q placeholder=Suche oninput=searchUsers()><div id=ul>${us.map(u=>userHtml(u)).join("")}</div></div></div>`}
-async function searchUsers(){let us=await api("/api/users?q="+encodeURIComponent(q.value));ul.innerHTML=us.map(userHtml).join("")}
-function userHtml(u){return `<div class=user><b>${esc(u.nick)}</b> ${u.online?'<span class=online>● online</span>':''}<br>${u.age} · ${esc(u.city)}<br><span class=muted>${esc(u.about||"")}</span><br><button onclick="openDM(${u.id},'${esc(u.nick)}')">Nachricht</button></div>`}
-async function openDM(id,nick){dmTarget=id;let rows=await api("/api/dm/"+id);main.innerHTML=`<div class="box chat"><h3>Privat: ${esc(nick)}</h3><div id=dmList class=msgs>${rows.map(m=>`<div class=msg><b>${esc(m.nick)}:</b> ${esc(m.text)}</div>`).join("")}</div><div class=send><input id=dmInput onkeydown="if(event.key==='Enter')sendDM()"><button onclick=sendDM>Senden</button></div></div>`}
-function sendDM(){let t=dmInput.value.trim();if(t){ws.send(JSON.stringify({type:"dm",to:dmTarget,text:t}));dmInput.value=""}}
-async function profile(){main.innerHTML=`<div class=box><h3>Mein Profil</h3><div class=body><p><b>${esc(me.nick)}</b></p><input id=pa type=number min=18 value="${me.age}"><br><br><input id=pc value="${esc(me.city)}"><br><br><textarea id=pb rows=6>${esc(me.about)}</textarea><br><br><button onclick=saveProfile()>Speichern</button></div></div>`}
-async function saveProfile(){me=await api("/api/me",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({age:+pa.value,city:pc.value,about:pb.value})});profile()}
-function logout(){localStorage.removeItem("token");location.reload()}
-if(token)boot().catch(()=>{token="";localStorage.removeItem("token");loginView()});else loginView();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatVZ</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        /* Login Bereich */
+        #login-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px; }
+        #login-container h2 { margin-bottom: 20px; color: #1877f2; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccd0d5; border-radius: 6px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #1877f2; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #166fe5; }
+
+        /* Chat Bereich (standardmäßig versteckt) */
+        #chat-container { display: none; width: 100%; max-width: 800px; height: 80vh; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-direction: column; overflow: hidden; }
+        #chat-header { background: #1877f2; color: white; padding: 15px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        #status { font-size: 14px; opacity: 0.8; }
+        #msgs { flex: 1; padding: 20px; overflow-y: auto; background: #f7f8fa; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Nachrichten-Stile */
+        .msg { padding: 10px 14px; border-radius: 18px; max-width: 70%; word-wrap: break-word; font-size: 15px; animation: fadeIn 0.2s ease-in-out; }
+        .msg.received { background: #e4e6eb; align-self: flex-start; color: black; }
+        .msg.sent { background: #0084ff; color: white; align-self: flex-end; }
+        .msg-user { font-size: 11px; opacity: 0.6; display: block; margin-bottom: 20px; margin-top: -8px; }
+        .msg-user.sent { text-align: right; }
+
+        #chat-input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #e4e6eb; }
+        #chat-input-area input { margin-bottom: 0; flex: 1; margin-right: 10px; }
+        #chat-input-area button { width: auto; padding: 0 25px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-container">
+        <h2>Willkommen bei ChatVZ</h2>
+        <input type="text" id="username" placeholder="Dein Benutzername" required>
+        <button onclick="startChat()">Dem Chat beitreten</button>
+    </div>
+
+    <!-- CHAT SCREEN -->
+    <div id="chat-container">
+        <div id="chat-header">
+            <span>💬 ChatVZ Hauptraum</span>
+            <span id="status">Verbinde...</span>
+        </div>
+        <div id="msgs"></div>
+        <div id="chat-input-area">
+            <input type="text" id="msg-input" placeholder="Nachricht schreiben..." onkeypress="checkEnter(event)">
+            <button onclick="sendMessage()">Senden</button>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let token = "dummy-token-fuer-test"; // Ersetze dies später durch echtes JWT falls benötigt
+        let username = "";
+
+        const loginContainer = document.getElementById('login-container');
+        const chatContainer = document.getElementById('chat-container');
+        const msgs = document.getElementById('msgs');
+        const statusSpan = document.getElementById('status');
+        const msgInput = document.getElementById('msg-input');
+
+        function startChat() {
+            username = document.getElementById('username').value.trim();
+            if (!username) return alert("Bitte gib einen Benutzernamen ein!");
+
+            // Login-Maske ausblenden, Chat einblenden
+            loginContainer.style.display = 'none';
+            chatContainer.style.display = 'flex';
+
+            connect();
+        }
+
+        function connect() {
+            // Deine smarte, dynamische URL-Erkennung (funktioniert lokal und auf Render automatisch)
+            const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+            const host = location.host;
+            const connectionUrl = `${protocol}${host}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
+
+            ws = new WebSocket(connectionUrl);
+
+            ws.onopen = () => {
+                statusSpan.textContent = "Online";
+                statusSpan.style.color = "#4cd137";
+            };
+
+            ws.onmessage = (e) => {
+                try {
+                    let data = JSON.parse(e.data);
+                    
+                    // Verarbeitet eingehende Nachrichten
+                    if (data.type === "room_message" || data.type === "message") {
+                        displayMessage(data.user || "Anonym", data.text, "received");
+                    }
+                } catch (err) {
+                    console.error("Fehler beim Parsen der Nachricht:", err);
+                }
+            };
+
+            ws.onclose = () => {
+                statusSpan.textContent = "Offline (Verbindung verloren)";
+                statusSpan.style.color = "#e74c3c";
+                // Automatischer Wiederverbindungsversuch nach 3 Sekunden
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket Fehler:", err);
+            };
+        }
+
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            // Nachricht an den Server senden (Struktur passend zu typischen Chat-Backends)
+            const payload = {
+                type: "room_message",
+                text: text,
+                user: username
+            };
+
+            ws.send(JSON.stringify(payload));
+            
+            // Eigene Nachricht sofort im UI anzeigen
+            displayMessage(username, text, "sent");
+            msgInput.value = "";
+        }
+
+        function displayMessage(user, text, side) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg', side);
+            msgDiv.textContent = text;
+            
+            const userDiv = document.createElement('div');
+            userDiv.classList.add('msg-user', side);
+            userDiv.textContent = side === "sent" ? "Du" : user;
+
+            msgs.appendChild(msgDiv);
+            msgs.appendChild(userDiv);
+            
+            // Automatisch nach unten scrollen
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>
