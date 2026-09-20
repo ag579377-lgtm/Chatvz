@@ -700,7 +700,7 @@ app.get(/(.*)/, (req, res) =>
 initDb()
   .then(() => {
     server.listen(PORT, "0.0.0.0", () =>
-      console.log(`ChatVZ running on port ${PORT}`)
+      console.log(`ChatiNova running on port ${PORT}`)
     );
   })
   .catch(err => {
