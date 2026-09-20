@@ -1,161 +1,54 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatVZ</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        
-        /* Login Bereich */
-        #login-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 400px; }
-        #login-container h2 { margin-bottom: 20px; color: #1877f2; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccd0d5; border-radius: 6px; font-size: 16px; }
-        button { width: 100%; padding: 12px; background-color: #1877f2; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #166fe5; }
-
-        /* Chat Bereich (standardmäßig versteckt) */
-        #chat-container { display: none; width: 100%; max-width: 800px; height: 80vh; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex-direction: column; overflow: hidden; }
-        #chat-header { background: #1877f2; color: white; padding: 15px; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
-        #status { font-size: 14px; opacity: 0.8; }
-        #msgs { flex: 1; padding: 20px; overflow-y: auto; background: #f7f8fa; display: flex; flex-direction: column; gap: 10px; }
-        
-        /* Nachrichten-Stile */
-        .msg { padding: 10px 14px; border-radius: 18px; max-width: 70%; word-wrap: break-word; font-size: 15px; animation: fadeIn 0.2s ease-in-out; }
-        .msg.received { background: #e4e6eb; align-self: flex-start; color: black; }
-        .msg.sent { background: #0084ff; color: white; align-self: flex-end; }
-        .msg-user { font-size: 11px; opacity: 0.6; display: block; margin-bottom: 20px; margin-top: -8px; }
-        .msg-user.sent { text-align: right; }
-
-        #chat-input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #e4e6eb; }
-        #chat-input-area input { margin-bottom: 0; flex: 1; margin-right: 10px; }
-        #chat-input-area button { width: auto; padding: 0 25px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-</head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChatVZ</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,sans-serif;background:#eef2f7;color:#182230}
+button,input,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px}.card{background:white;border-radius:18px;padding:28px;box-shadow:0 12px 40px #0001;width:min(440px,100%)}h1{margin:0 0 8px}.muted{color:#667085}
+input,textarea{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;margin:7px 0 12px}button{border:0;border-radius:10px;padding:11px 15px;background:#1877f2;color:white;font-weight:700}button.secondary{background:#edf2f7;color:#344054}
+.app{height:100vh;display:grid;grid-template-columns:260px 1fr 300px;background:#fff}.side{border-right:1px solid #e4e7ec;padding:18px;overflow:auto}.main{display:flex;flex-direction:column;min-width:0}.top{padding:16px 20px;border-bottom:1px solid #e4e7ec;display:flex;justify-content:space-between;align-items:center}.content{display:flex;flex:1;min-height:0}.rooms{padding:10px}.room,.user{padding:12px;border-radius:10px;margin-bottom:6px;cursor:pointer}.room:hover,.user:hover{background:#f2f4f7}.online{width:8px;height:8px;background:#12b76a;border-radius:50%;display:inline-block;margin-right:7px}
+.messages{flex:1;overflow:auto;padding:20px;background:#f8fafc}.msg{max-width:75%;margin:8px 0;padding:10px 13px;border-radius:14px;background:#e9eef5}.mine{margin-left:auto;background:#1877f2;color:white}.meta{font-size:11px;opacity:.65;margin-bottom:4px}.msg img{max-width:280px;border-radius:10px;display:block;margin-top:6px}.composer{display:flex;gap:8px;padding:12px;border-top:1px solid #e4e7ec}.composer input{margin:0}.profile{padding:18px;overflow:auto}.avatar{width:90px;height:90px;border-radius:50%;object-fit:cover;background:#dbe4f0;display:block}.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}.small{font-size:12px}.danger{background:#d92d20}.file{display:none}@media(max-width:900px){.app{grid-template-columns:190px 1fr}.profile{display:none}}@media(max-width:650px){.app{grid-template-columns:1fr}.side{display:none}}
+</style></head>
 <body>
-
-    <!-- LOGIN SCREEN -->
-    <div id="login-container">
-        <h2>Willkommen bei ChatVZ</h2>
-        <input type="text" id="username" placeholder="Dein Benutzername" required>
-        <button onclick="startChat()">Dem Chat beitreten</button>
-    </div>
-
-    <!-- CHAT SCREEN -->
-    <div id="chat-container">
-        <div id="chat-header">
-            <span>💬 ChatVZ Hauptraum</span>
-            <span id="status">Verbinde...</span>
-        </div>
-        <div id="msgs"></div>
-        <div id="chat-input-area">
-            <input type="text" id="msg-input" placeholder="Nachricht schreiben..." onkeypress="checkEnter(event)">
-            <button onclick="sendMessage()">Senden</button>
-        </div>
-    </div>
-
-    <script>
-        let ws;
-        let token = "dummy-token-fuer-test"; // Ersetze dies später durch echtes JWT falls benötigt
-        let username = "";
-
-        const loginContainer = document.getElementById('login-container');
-        const chatContainer = document.getElementById('chat-container');
-        const msgs = document.getElementById('msgs');
-        const statusSpan = document.getElementById('status');
-        const msgInput = document.getElementById('msg-input');
-
-        function startChat() {
-            username = document.getElementById('username').value.trim();
-            if (!username) return alert("Bitte gib einen Benutzernamen ein!");
-
-            // Login-Maske ausblenden, Chat einblenden
-            loginContainer.style.display = 'none';
-            chatContainer.style.display = 'flex';
-
-            connect();
-        }
-
-        function connect() {
-            // Deine smarte, dynamische URL-Erkennung (funktioniert lokal und auf Render automatisch)
-            const protocol = location.protocol === "https:" ? "wss://" : "ws://";
-            const host = location.host;
-            const connectionUrl = `${protocol}${host}?token=${encodeURIComponent(token)}&user=${encodeURIComponent(username)}`;
-
-            ws = new WebSocket(connectionUrl);
-
-            ws.onopen = () => {
-                statusSpan.textContent = "Online";
-                statusSpan.style.color = "#4cd137";
-            };
-
-            ws.onmessage = (e) => {
-                try {
-                    let data = JSON.parse(e.data);
-                    
-                    // Verarbeitet eingehende Nachrichten
-                    if (data.type === "room_message" || data.type === "message") {
-                        displayMessage(data.user || "Anonym", data.text, "received");
-                    }
-                } catch (err) {
-                    console.error("Fehler beim Parsen der Nachricht:", err);
-                }
-            };
-
-            ws.onclose = () => {
-                statusSpan.textContent = "Offline (Verbindung verloren)";
-                statusSpan.style.color = "#e74c3c";
-                // Automatischer Wiederverbindungsversuch nach 3 Sekunden
-                setTimeout(connect, 3000);
-            };
-
-            ws.onerror = (err) => {
-                console.error("WebSocket Fehler:", err);
-            };
-        }
-
-        function sendMessage() {
-            const text = msgInput.value.trim();
-            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-
-            // Nachricht an den Server senden (Struktur passend zu typischen Chat-Backends)
-            const payload = {
-                type: "room_message",
-                text: text,
-                user: username
-            };
-
-            ws.send(JSON.stringify(payload));
-            
-            // Eigene Nachricht sofort im UI anzeigen
-            displayMessage(username, text, "sent");
-            msgInput.value = "";
-        }
-
-        function displayMessage(user, text, side) {
-            const msgDiv = document.createElement('div');
-            msgDiv.classList.add('msg', side);
-            msgDiv.textContent = text;
-            
-            const userDiv = document.createElement('div');
-            userDiv.classList.add('msg-user', side);
-            userDiv.textContent = side === "sent" ? "Du" : user;
-
-            msgs.appendChild(msgDiv);
-            msgs.appendChild(userDiv);
-            
-            // Automatisch nach unten scrollen
-            msgs.scrollTop = msgs.scrollHeight;
-        }
-
-        function checkEnter(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
-        }
-    </script>
-</body>
-</html>
+<section id="auth" class="auth"><div class="card">
+<h1>ChatVZ</h1><p class="muted">Echter Login, Profile, Galerie und Live-Chat.</p>
+<input id="nick" placeholder="Nickname"><input id="password" type="password" placeholder="Passwort (mind. 8 Zeichen)">
+<div id="regFields" class="hidden"><input id="age" type="number" min="18" max="99" placeholder="Alter"><input id="city" placeholder="Stadt"></div>
+<button id="submit">Einloggen</button><button id="toggle" class="secondary" style="margin-top:8px">Noch nicht registriert</button><p id="error" class="muted"></p>
+</div></section>
+<section id="app" class="app hidden">
+<aside class="side"><h2>ChatVZ</h2><p id="meLabel" class="muted"></p><button id="logout" class="secondary">Abmelden</button><h3>Räume</h3><div id="rooms" class="rooms"></div><h3>Mitglieder</h3><input id="search" placeholder="Suchen"><div id="users"></div></aside>
+<main class="main"><div class="top"><strong id="chatTitle">Lounge</strong><span id="status" class="muted">Verbinde…</span></div><div id="messages" class="messages"></div><div class="composer"><label><input id="chatFile" class="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="photoBtn">📷</button></label><input id="text" placeholder="Nachricht…"><button id="send">Senden</button></div></main>
+<aside class="profile"><h3>Mein Profil</h3><img id="avatar" class="avatar" alt=""><p><b id="profileNick"></b></p><input id="avatarFile" class="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="avatarBtn">Profilbild ändern</button><h4>Galerie</h4><input id="galleryFile" class="file" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="galleryBtn">Bilder hinzufügen</button><div id="gallery" class="gallery" style="margin-top:10px"></div></aside>
+</section>
+<script>
+let token=localStorage.getItem("chatvz_token"), me=null, ws=null, roomId=1, dmUser=null, register=false;
+const $=id=>document.getElementById(id), api=async(path,opt={})=>{opt.headers=opt.headers||{};opt.headers.Authorization="Bearer "+token;const r=await fetch(path,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Fehler");return d};
+function err(e){$("error").textContent=e.message}
+$("toggle").onclick=()=>{register=!register;$("regFields").classList.toggle("hidden",!register);$("submit").textContent=register?"Registrieren":"Einloggen";$("toggle").textContent=register?"Zum Login":"Noch nicht registriert"};
+$("submit").onclick=async()=>{try{const body={nick:$("nick").value,password:$("password").value};if(register){body.age=Number($("age").value);body.city=$("city").value}const d=await fetch(register?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json().then(x=>{if(!r.ok)throw Error(x.error);return x}));token=d.token;localStorage.setItem("chatvz_token",token);start()}catch(e){err(e)}};
+async function start(){try{me=await api("/api/me");$("auth").classList.add("hidden");$("app").classList.remove("hidden");$("meLabel").textContent=me.nick+" · "+me.age;$("profileNick").textContent=me.nick;setAvatar(me.avatar_url);await loadRooms();await loadUsers();await loadGallery();connect()}catch(e){localStorage.removeItem("chatvz_token");$("error").textContent="Sitzung abgelaufen."}}
+function setAvatar(u){$("avatar").src=u||"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><rect width='100%' height='100%' fill='%23dbe4f0'/><text x='50%' y='55%' text-anchor='middle' font-size='32'>👤</text></svg>"}
+async function loadRooms(){const rs=await api("/api/rooms");$("rooms").innerHTML=rs.map(r=>'<div class="room" data-id="'+r.id+'">💬 '+r.name+'</div>').join("");document.querySelectorAll(".room").forEach(x=>x.onclick=()=>joinRoom(Number(x.dataset.id),x.textContent.trim()))}
+async function joinRoom(id,name){dmUser=null;roomId=id;$("chatTitle").textContent=name;$("messages").innerHTML="";const ms=await api("/api/rooms/"+id+"/messages");ms.forEach(renderRoom);if(ws?.readyState===1)ws.send(JSON.stringify({type:"join_room",roomId:id}))}
+async function loadUsers(){const q=$("search").value||"";const us=await api("/api/users?q="+encodeURIComponent(q));$("users").innerHTML=us.map(u=>'<div class="user" data-id="'+u.id+'"><span class="online" style="background:'+(u.online?"#12b76a":"#98a2b3")+'"></span>'+esc(u.nick)+' <span class="small">'+u.age+'</span></div>').join("");document.querySelectorAll(".user").forEach(x=>x.onclick=()=>openDm(Number(x.dataset.id)))}
+$("search").oninput=()=>loadUsers();
+async function openDm(id){dmUser=id;$("chatTitle").textContent="Privatchat";$("messages").innerHTML="";const ms=await api("/api/dm/"+id);ms.forEach(renderDm)}
+function connect(){const p=location.protocol==="https:"?"wss":"ws";ws=new WebSocket(p+"://"+location.host+"?token="+encodeURIComponent(token));ws.onopen=()=>{$("status").textContent="Online";ws.send(JSON.stringify({type:"join_room",roomId}));};ws.onclose=()=>{$("status").textContent="Offline";setTimeout(connect,2500)};ws.onmessage=e=>{const x=JSON.parse(e.data);if(x.type==="room_message")renderRoom(x.message);if(x.type==="dm")renderDm(x.message)}}
+function renderRoom(m){if(dmUser)return;addMsg(m.nick,m.text,m.nick===me.nick,m.image_url)}
+function renderDm(m){addMsg(m.nick,m.text,String(m.sender_id)===String(me.id),m.image_url)}
+function addMsg(n,t,mine,img){const d=document.createElement("div");d.className="msg "+(mine?"mine":"");d.innerHTML='<div class="meta">'+esc(mine?"Du":n)+'</div>'+esc(t||"");if(img){const im=document.createElement("img");im.src=img;im.loading="lazy";d.appendChild(im)}$("messages").appendChild(d);$("messages").scrollTop=$("messages").scrollHeight}
+function esc(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML}
+async function upload(file,endpoint,field="image"){const f=new FormData();f.append(field,file);return api(endpoint,{method:"POST",body:f})}
+$("send").onclick=send;$("text").onkeydown=e=>{if(e.key==="Enter")send()};
+$("photoBtn").onclick=()=>$("chatFile").click();$("chatFile").onchange=()=>{if($("chatFile").files[0])sendImage($("chatFile").files[0])};
+async function send(){const t=$("text").value.trim();if(!t||!ws||ws.readyState!==1)return;ws.send(JSON.stringify(dmUser?{type:"dm",to:dmUser,text:t}:{type:"room_message",text:t}));$("text").value=""}
+async function sendImage(file){try{const d=await upload(file,"/api/chat-image");if(ws?.readyState===1)ws.send(JSON.stringify(dmUser?{type:"dm",to:dmUser,text:"",imageUrl:d.url}:{type:"room_message",text:"",imageUrl:d.url}));$("chatFile").value=""}catch(e){alert(e.message)}}
+$("avatarBtn").onclick=()=>$("avatarFile").click();$("avatarFile").onchange=async()=>{try{const d=await upload($("avatarFile").files[0],"/api/me/avatar");setAvatar(d.url);me.avatar_url=d.url}catch(e){alert(e.message)}};
+$("galleryBtn").onclick=()=>$("galleryFile").click();$("galleryFile").onchange=async()=>{try{const f=new FormData();for(const x of $("galleryFile").files)f.append("images",x);await api("/api/me/gallery",{method:"POST",body:f});await loadGallery();$("galleryFile").value=""}catch(e){alert(e.message)}};
+async function loadGallery(){const gs=await api("/api/users/"+me.id+"/gallery");$("gallery").innerHTML=gs.map(g=>'<img src="'+g.url+'" loading="lazy" title="Bild '+g.id+'">').join("")}
+$("logout").onclick=()=>{localStorage.removeItem("chatvz_token");location.reload()};
+if(token)start();
+</script></body></html>
