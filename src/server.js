@@ -336,16 +336,16 @@ wss.on("connection", async (ws, req) => {
         }
 
         if (x.type === "room_message") {
-          if (!ws.roomId || typeof x.text !== "string") return;
+          if (!ws.roomId || (typeof x.text !== "string" && !x.imageUrl)) return;
           const text = x.text.trim().slice(0, 1000);
           if (!text && !x.imageUrl) return;
 
           const r = await query(
-            "INSERT INTO messages(room_id,user_id,text) VALUES($1,$2,$3) RETURNING id",
-            [ws.roomId, ws.userId, text]
+            "INSERT INTO messages(room_id,user_id,text,image_url) VALUES($1,$2,$3,$4) RETURNING id",
+            [ws.roomId, ws.userId, text || "", x.imageUrl || null]
           );
           const m = await query(
-            `SELECT m.id,m.text,m.created_at,u.nick
+            `SELECT m.id,m.text,m.image_url,m.created_at,u.nick
              FROM messages m JOIN users u ON u.id=m.user_id
              WHERE m.id=$1`,
             [r.rows[0].id]
@@ -356,15 +356,15 @@ wss.on("connection", async (ws, req) => {
         if (x.type === "dm") {
           const to = Number(x.to);
           const text = String(x.text || "").trim().slice(0, 1000);
-          if (!to || !text || String(to) === ws.userId) return;
+          if (!to || (!text && !x.imageUrl) || String(to) === ws.userId) return;
 
           const r = await query(
-            `INSERT INTO direct_messages(sender_id,receiver_id,text)
-             VALUES($1,$2,$3) RETURNING id`,
-            [ws.userId, to, text]
+            `INSERT INTO direct_messages(sender_id,receiver_id,text,image_url)
+             VALUES($1,$2,$3,$4) RETURNING id`,
+            [ws.userId, to, text || "", x.imageUrl || null]
           );
           const m = await query(
-            `SELECT d.id,d.text,d.created_at,u.nick,d.sender_id
+            `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id
              FROM direct_messages d JOIN users u ON u.id=d.sender_id
              WHERE d.id=$1`,
             [r.rows[0].id]
