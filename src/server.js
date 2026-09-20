@@ -256,7 +256,7 @@ app.post("/api/login", async (req, res) => {
     );
     const u = r.rows[0];
     if (!u || !(await bcrypt.compare(password || "", u.password_hash)))
-      return res.status(401).json({ error: "Login fehlgeschlagen." });
+      return res.status(401).json({ error: "Benutzername oder Passwort ist falsch." });
 
     res.json({ token: tokenFor(u), user: await userPublic(u.id) });
   } catch (e) {
