@@ -261,6 +261,33 @@ app.post("/api/chat-image", auth, upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "Bitte ein gültiges Bild hochladen." });
   res.json({ url: "/uploads/" + req.file.filename });
 });
+
+app.delete("/api/chat-message/:id", auth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "Ungültige Nachricht." });
+  const r = await query(
+    "DELETE FROM messages WHERE id=$1 AND user_id=$2 AND image_url IS NOT NULL RETURNING image_url",
+    [id, req.user.id]
+  );
+  if (!r.rows[0]) return res.status(404).json({ error: "Bildnachricht nicht gefunden." });
+  fs.rm(path.join(UPLOAD_DIR, path.basename(r.rows[0].image_url)), { force: true }, () => {});
+  broadcastRoom(0, { type: "message_deleted", messageId: id });
+  for (const [, set] of online) for (const ws of set) if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id }));
+  res.json({ ok: true });
+});
+
+app.delete("/api/dm-message/:id", auth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "Ungültige Nachricht." });
+  const r = await query(
+    "DELETE FROM direct_messages WHERE id=$1 AND sender_id=$2 AND image_url IS NOT NULL RETURNING image_url",
+    [id, req.user.id]
+  );
+  if (!r.rows[0]) return res.status(404).json({ error: "Bildnachricht nicht gefunden." });
+  fs.rm(path.join(UPLOAD_DIR, path.basename(r.rows[0].image_url)), { force: true }, () => {});
+  for (const [, set] of online) for (const ws of set) if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id }));
+  res.json({ ok: true });
+});
 app.get("/api/rooms", auth, async (req, res) => {
   const r = await query("SELECT id,name FROM rooms ORDER BY id");
   res.json(r.rows);
