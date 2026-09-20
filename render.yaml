@@ -2,10 +2,14 @@ services:
   - type: web
     name: chatvz-backend
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
+    disk:
+      name: chatvz-uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 10
     envVars:
       - key: NODE_ENV
         value: production
@@ -15,6 +19,8 @@ services:
         fromDatabase:
           name: chatvz-db
           property: connectionString
+      - key: UPLOAD_DIR
+        value: /opt/render/project/src/uploads
 
 databases:
   - name: chatvz-db
