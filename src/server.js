@@ -313,8 +313,8 @@ app.delete("/api/chat-message/:id", auth, async (req, res) => {
   );
   if (!r.rows[0]) return res.status(404).json({ error: "Bildnachricht nicht gefunden." });
   fs.rm(path.join(UPLOAD_DIR, path.basename(r.rows[0].image_url)), { force: true }, () => {});
-  broadcastRoom(0, { type: "message_deleted", messageId: id });
-  for (const [, set] of online) for (const ws of set) if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id }));
+  for (const [, set] of online) for (const ws of set)
+    if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id, messageType: "room" }));
   res.json({ ok: true });
 });
 
@@ -327,7 +327,8 @@ app.delete("/api/dm-message/:id", auth, async (req, res) => {
   );
   if (!r.rows[0]) return res.status(404).json({ error: "Bildnachricht nicht gefunden." });
   fs.rm(path.join(UPLOAD_DIR, path.basename(r.rows[0].image_url)), { force: true }, () => {});
-  for (const [, set] of online) for (const ws of set) if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id }));
+  for (const [, set] of online) for (const ws of set)
+    if (ws.readyState === 1) ws.send(JSON.stringify({ type: "message_deleted", messageId: id, messageType: "dm" }));
   res.json({ ok: true });
 });
 app.get("/api/rooms", auth, async (req, res) => {
@@ -353,13 +354,26 @@ app.get("/api/rooms/:id/messages", auth, async (req, res) => {
 });
 
 app.get("/api/dm/:id", auth, async (req, res) => {
+  const otherId = Number(req.params.id);
+  if (!Number.isInteger(otherId) || otherId <= 0 || otherId === Number(req.user.id))
+    return res.status(400).json({ error: "Ungültiger Chatpartner." });
+
+  const other = await query("SELECT id FROM users WHERE id=$1", [otherId]);
+  if (!other.rows[0]) return res.status(404).json({ error: "Benutzer nicht gefunden." });
+
+  const blocked = await query(
+    "SELECT 1 FROM blocks WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1) LIMIT 1",
+    [req.user.id, otherId]
+  );
+  if (blocked.rows.length) return res.status(403).json({ error: "Dieser Privatchat ist derzeit blockiert." });
+
   const r = await query(
-    `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id
+    `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id,d.receiver_id
      FROM direct_messages d JOIN users u ON u.id=d.sender_id
      WHERE (d.sender_id=$1 AND d.receiver_id=$2)
         OR (d.sender_id=$2 AND d.receiver_id=$1)
      ORDER BY d.id DESC LIMIT 100`,
-    [req.user.id, Number(req.params.id)]
+    [req.user.id, otherId]
   );
   res.json(r.rows.reverse());
 });
@@ -499,8 +513,9 @@ wss.on("connection", async (ws, req) => {
              WHERE d.id=$1`,
             [r.rows[0].id]
           );
-          broadcastUser(to, { type: "dm", message: m.rows[0] });
-          broadcastUser(ws.userId, { type: "dm", message: m.rows[0] });
+          const dmMessage = m.rows[0];
+          broadcastUser(to, { type: "dm", message: dmMessage });
+          broadcastUser(ws.userId, { type: "dm", message: dmMessage });
         }
       } catch (e) {
         console.error("WS message error:", e.message);
