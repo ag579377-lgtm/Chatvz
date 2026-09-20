@@ -83,7 +83,7 @@ function removeMessage(id,type){document.querySelectorAll(".msg").forEach(x=>{if
 function esc(s){const d=document.createElement("div");d.textContent=s||"";return d.innerHTML}
 $("saveProfile").onclick=async()=>{try{const d=await api("/api/me",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({age:Number($("profileAge").value),state:$("profileState").value,about:$("profileAbout").value})});me=d;$("meLabel").textContent=me.nick+" · "+me.age;$("profileNick").textContent=me.nick;alert("Profil gespeichert.")}catch(e){alert(e.message)}}; async function prepareUploadImage(file){
   if(!file)return file;
-  if(!/^image\\/(jpeg|png|webp)$/i.test(file.type)||file.size<3*1024*1024)return file;
+  if(!/^image\/(jpeg|png|webp)$/i.test(file.type)||file.size<3*1024*1024)return file;
   try{
     const bitmap=await createImageBitmap(file);
     const max=1800;
