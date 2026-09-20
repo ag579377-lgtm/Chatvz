@@ -71,6 +71,8 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS image_url TEXT;
+    ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS image_url TEXT;
     CREATE INDEX IF NOT EXISTS messages_room_id_id_idx ON messages(room_id, id);
 
     CREATE TABLE IF NOT EXISTS profile_images(id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,url TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
@@ -263,7 +265,7 @@ app.get("/api/rooms", auth, async (req, res) => {
 
 app.get("/api/rooms/:id/messages", auth, async (req, res) => {
   const r = await query(
-    `SELECT m.id,m.text,m.created_at,u.nick
+    `SELECT m.id,m.text,m.image_url,m.created_at,u.nick
      FROM messages m JOIN users u ON u.id=m.user_id
      WHERE m.room_id=$1 ORDER BY m.id DESC LIMIT 100`,
     [Number(req.params.id)]
@@ -273,7 +275,7 @@ app.get("/api/rooms/:id/messages", auth, async (req, res) => {
 
 app.get("/api/dm/:id", auth, async (req, res) => {
   const r = await query(
-    `SELECT d.id,d.text,d.created_at,u.nick,d.sender_id
+    `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id
      FROM direct_messages d JOIN users u ON u.id=d.sender_id
      WHERE (d.sender_id=$1 AND d.receiver_id=$2)
         OR (d.sender_id=$2 AND d.receiver_id=$1)
@@ -336,7 +338,7 @@ wss.on("connection", async (ws, req) => {
         if (x.type === "room_message") {
           if (!ws.roomId || typeof x.text !== "string") return;
           const text = x.text.trim().slice(0, 1000);
-          if (!text) return;
+          if (!text && !x.imageUrl) return;
 
           const r = await query(
             "INSERT INTO messages(room_id,user_id,text) VALUES($1,$2,$3) RETURNING id",
