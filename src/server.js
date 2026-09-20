@@ -594,7 +594,7 @@ wss.on("connection", async (ws, req) => {
             [ws.userId, to, text || "", imageUrl]
           );
           const m = await query(
-            `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id
+            `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id,d.receiver_id
              FROM direct_messages d JOIN users u ON u.id=d.sender_id
              WHERE d.id=$1`,
             [r.rows[0].id]
