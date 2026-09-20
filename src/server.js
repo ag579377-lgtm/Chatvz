@@ -135,6 +135,22 @@ async function initDb() {
       PRIMARY KEY(user_id, target_id)
     );
 
+    CREATE TABLE IF NOT EXISTS match_actions(
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY(user_id,target_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS matches(
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY(user_id,target_id),
+      CHECK(user_id < target_id)
+    );
+    CREATE INDEX IF NOT EXISTS match_actions_target_idx ON match_actions(target_id);
+
     CREATE TABLE IF NOT EXISTS reports(
       id BIGSERIAL PRIMARY KEY,
       reporter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -517,11 +533,53 @@ app.delete("/api/favorite/:id", auth, async (req, res) => {
 });
 
 app.post("/api/block/:id", auth, async (req, res) => {
-  await query(
-    "INSERT INTO blocks(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
-    [req.user.id, Number(req.params.id)]
-  );
-  res.json({ ok: true });
+  await query("INSERT INTO blocks(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[req.user.id,Number(req.params.id)]);
+  res.json({ok:true});
+});
+
+app.get("/api/online", auth, async (req,res) => {
+  const r=await query(`SELECT id,nick,age,gender,state,about,avatar_url FROM users
+    WHERE id<>$1 AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=users.id)
+    ORDER BY nick LIMIT 100`,[req.user.id]);
+  res.json(r.rows.filter(u=>(online.get(String(u.id))?.size||0)>0).map(u=>({...u,online:true})));
+});
+
+app.get("/api/matches", auth, async (req,res) => {
+  const r=await query(`SELECT u.id,u.nick,u.age,u.gender,u.state,u.about,u.avatar_url,m.created_at
+    FROM matches m JOIN users u ON u.id=CASE WHEN m.user_id=$1 THEN m.target_id ELSE m.user_id END
+    WHERE m.user_id=$1 OR m.target_id=$1 ORDER BY m.created_at DESC`,[req.user.id]);
+  res.json(r.rows.map(u=>({...u,online:(online.get(String(u.id))?.size||0)>0})));
+});
+
+app.post("/api/match/:id", auth, async (req,res) => {
+  const targetId=Number(req.params.id);
+  if(!Number.isInteger(targetId)||targetId<=0||targetId===Number(req.user.id)) return res.status(400).json({error:"Ungültiger Benutzer."});
+  const target=await query("SELECT id FROM users WHERE id=$1",[targetId]);
+  if(!target.rows[0]) return res.status(404).json({error:"Benutzer nicht gefunden."});
+  const blocked=await query("SELECT 1 FROM blocks WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1) LIMIT 1",[req.user.id,targetId]);
+  if(blocked.rows.length) return res.status(403).json({error:"Dieser Benutzer ist blockiert."});
+  await query("INSERT INTO match_actions(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[req.user.id,targetId]);
+  const reciprocal=await query("SELECT 1 FROM match_actions WHERE user_id=$1 AND target_id=$2",[targetId,req.user.id]);
+  let matched=false;
+  if(reciprocal.rows.length){
+    await query("INSERT INTO matches(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[Math.min(Number(req.user.id),targetId),Math.max(Number(req.user.id),targetId)]);
+    matched=true;
+  }
+  res.json({ok:true,matched});
+});
+
+app.delete("/api/match/:id", auth, async (req,res) => {
+  const targetId=Number(req.params.id);
+  await query("DELETE FROM match_actions WHERE user_id=$1 AND target_id=$2",[req.user.id,targetId]);
+  await query("DELETE FROM matches WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1)",[req.user.id,targetId]);
+  res.json({ok:true});
+});
+
+app.get("/api/match-status/:id", auth, async (req,res) => {
+  const targetId=Number(req.params.id);
+  const action=await query("SELECT 1 FROM match_actions WHERE user_id=$1 AND target_id=$2",[req.user.id,targetId]);
+  const match=await query("SELECT 1 FROM matches WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1)",[req.user.id,targetId]);
+  res.json({interested:action.rows.length>0,matched:match.rows.length>0});
 });
 
 wss.on("connection", async (ws, req) => {
