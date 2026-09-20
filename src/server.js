@@ -109,6 +109,13 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS direct_messages_pair_idx
       ON direct_messages(sender_id, receiver_id, id);
 
+    CREATE TABLE IF NOT EXISTS direct_message_reads(
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      partner_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      last_read_message_id BIGINT NOT NULL DEFAULT 0,
+      PRIMARY KEY(user_id, partner_id)
+    );
+
     CREATE TABLE IF NOT EXISTS favorites(
       user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -358,7 +365,11 @@ app.get("/api/dms", auth, async (req,res) => {
     SELECT DISTINCT ON (u.id)
       u.id AS user_id,u.nick,u.age,u.state,u.avatar_url,
       (SELECT COUNT(*) FROM direct_messages z
-       WHERE z.receiver_id=$1 AND z.sender_id=u.id) AS unread_count,
+       WHERE z.receiver_id=$1 AND z.sender_id=u.id
+         AND z.id > COALESCE(
+           (SELECT r.last_read_message_id FROM direct_message_reads r
+            WHERE r.user_id=$1 AND r.partner_id=u.id), 0
+         )) AS unread_count,
       d.text,d.image_url,d.created_at
     FROM users u
     JOIN direct_messages d
@@ -369,6 +380,26 @@ app.get("/api/dms", auth, async (req,res) => {
   `,[req.user.id]);
   const rows=r.rows.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   res.json(rows.map(x=>({...x,online:(online.get(String(x.user_id))?.size||0)>0,unread_count:Number(x.unread_count||0)})));
+});
+
+app.post("/api/dm/:id/read", auth, async (req,res) => {
+  const otherId = Number(req.params.id);
+  if (!Number.isInteger(otherId) || otherId <= 0 || otherId === Number(req.user.id))
+    return res.status(400).json({error:"Ungültiger Chatpartner."});
+  const r = await query(
+    `SELECT COALESCE(MAX(id),0) AS last_id
+     FROM direct_messages
+     WHERE sender_id=$2 AND receiver_id=$1`,
+    [req.user.id, otherId]
+  );
+  await query(
+    `INSERT INTO direct_message_reads(user_id,partner_id,last_read_message_id)
+     VALUES($1,$2,$3)
+     ON CONFLICT(user_id,partner_id)
+     DO UPDATE SET last_read_message_id=GREATEST(direct_message_reads.last_read_message_id,EXCLUDED.last_read_message_id)`,
+    [req.user.id, otherId, Number(r.rows[0].last_id||0)]
+  );
+  res.json({ok:true});
 });
 
 app.get("/api/dm/:id", auth, async (req, res) => {
