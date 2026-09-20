@@ -298,7 +298,7 @@ app.get("/api/favorites", auth, async (req, res) => {
     FROM favorites f JOIN users u ON u.id=f.target_id
     WHERE f.user_id=$1
       AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=u.id)
-    ORDER BY f.created_at DESC, u.nick
+    ORDER BY u.nick
     LIMIT 100`, [req.user.id]);
   res.json(r.rows.map(u => ({...u, online:(online.get(String(u.id))?.size||0)>0})));
 });
