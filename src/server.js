@@ -68,6 +68,7 @@ async function initDb() {
       age INTEGER NOT NULL CHECK(age >= 18),
       gender TEXT NOT NULL DEFAULT 'd',
       city TEXT DEFAULT '',
+      state TEXT DEFAULT '',
       about TEXT DEFAULT '',
       avatar_url TEXT DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -88,6 +89,7 @@ async function initDb() {
     );
 
     ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS state TEXT DEFAULT '';
 
     CREATE TABLE IF NOT EXISTS profile_images(id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,url TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
     CREATE INDEX IF NOT EXISTS profile_images_user_id_idx ON profile_images(user_id);
@@ -143,7 +145,7 @@ const online = new Map();
 
 async function userPublic(id) {
   const r = await query(
-    "SELECT id,nick,age,gender,city,about,avatar_url FROM users WHERE id=$1",
+    "SELECT id,nick,age,gender,city,state,about,avatar_url FROM users WHERE id=$1",
     [id]
   );
   return r.rows[0] || null;
@@ -180,7 +182,7 @@ function broadcastUser(uid, payload) {
 
 app.post("/api/register", async (req, res) => {
   if (!rateLimit("register:"+req.ip,5,60*60*1000)) return res.status(429).json({error:"Zu viele Registrierungsversuche. Bitte später erneut versuchen."});
-  const { nick, password, age, gender = "d", city = "" } = req.body || {};
+  const { nick, password, age, gender = "d", city = "", state = "" } = req.body || {};
   if (typeof nick !== "string" || nick.trim().length < 2 || nick.trim().length > 24)
     return res.status(400).json({ error: "Nickname muss 2–24 Zeichen haben." });
   if (typeof password !== "string" || password.length < 8)
@@ -191,10 +193,10 @@ app.post("/api/register", async (req, res) => {
   try {
     const hash = await bcrypt.hash(password, 12);
     const r = await query(
-      `INSERT INTO users(nick,password_hash,age,gender,city)
-       VALUES($1,$2,$3,$4,$5)
+      `INSERT INTO users(nick,password_hash,age,gender,city,state)
+       VALUES($1,$2,$3,$4,$5,$6)
        RETURNING id,nick,age,gender,city,about`,
-      [nick.trim(), hash, age, gender, String(city || "").slice(0, 80)]
+      [nick.trim(), hash, age, gender, String(city || "").slice(0, 80), String(state || "").slice(0, 40)]
     );
     const u = r.rows[0];
     res.json({ token: tokenFor(u), user: u });
@@ -232,9 +234,9 @@ app.get("/api/me", auth, async (req, res) => {
 app.get("/api/users", auth, async (req, res) => {
   const q = String(req.query.q || "").trim();
   const r = await query(
-    `SELECT id,nick,age,gender,city,about,avatar_url
+    `SELECT id,nick,age,gender,city,state,about,avatar_url
      FROM users
-     WHERE id<>$1 AND (nick ILIKE $2 OR city ILIKE $2)
+     WHERE id<>$1 AND (nick ILIKE $2 OR city ILIKE $2 OR state ILIKE $2)
        AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=users.id)
      ORDER BY nick
      LIMIT 100`,
@@ -247,13 +249,13 @@ app.get("/api/users", auth, async (req, res) => {
 });
 
 app.put("/api/me", auth, async (req, res) => {
-  const { age, city, about } = req.body || {};
+  const { age, city, state, about } = req.body || {};
   if (!Number.isInteger(age) || age < 18 || age > 99)
     return res.status(400).json({ error: "Ungültiges Alter" });
 
   await query(
-    "UPDATE users SET age=$1,city=$2,about=$3 WHERE id=$4",
-    [age, String(city || "").slice(0, 80), String(about || "").slice(0, 1000), req.user.id]
+    "UPDATE users SET age=$1,city=$2,state=$3,about=$4 WHERE id=$5",
+    [age, String(city || "").slice(0, 80), String(state || "").slice(0, 40), String(about || "").slice(0, 1000), req.user.id]
   );
   res.json(await userPublic(req.user.id));
 });
