@@ -71,9 +71,7 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
-    ALTER TABLE messages ADD COLUMN IF NOT EXISTS image_url TEXT;
-    ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS image_url TEXT;
-    CREATE INDEX IF NOT EXISTS messages_room_id_id_idx ON messages(room_id, id);
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
 
     CREATE TABLE IF NOT EXISTS profile_images(id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,url TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
     CREATE INDEX IF NOT EXISTS profile_images_user_id_idx ON profile_images(user_id);
@@ -85,6 +83,10 @@ async function initDb() {
       text TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS image_url TEXT;
+    ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS image_url TEXT;
+    CREATE INDEX IF NOT EXISTS messages_room_id_id_idx ON messages(room_id, id);
 
     CREATE INDEX IF NOT EXISTS direct_messages_pair_idx
       ON direct_messages(sender_id, receiver_id, id);
@@ -198,7 +200,7 @@ app.get("/api/me", auth, async (req, res) => {
 app.get("/api/users", auth, async (req, res) => {
   const q = String(req.query.q || "").trim();
   const r = await query(
-    `SELECT id,nick,age,gender,city,about
+    `SELECT id,nick,age,gender,city,about,avatar_url
      FROM users
      WHERE id<>$1 AND (nick ILIKE $2 OR city ILIKE $2)
      ORDER BY nick
