@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "../uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const storage = multer.diskStorage({ destination: (_req, _file, cb) => cb(null, UPLOAD_DIR), filename: (_req, file, cb) => cb(null, Date.now() + "-" + crypto.randomUUID() + path.extname(file.originalname).toLowerCase()) });
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024, files: 10 }, fileFilter: (_req, file, cb) => { const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype); cb(null, ok); } });
+const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024, files: 10 }, fileFilter: (_req, file, cb) => { const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype); cb(null, ok); } });
 
 if (!process.env.DATABASE_URL) {
   console.warn("DATABASE_URL is not set. Set it before starting the server.");
