@@ -33,6 +33,22 @@ const pool = new Pool({
 
 const app = express();
 const server = http.createServer(app);
+
+const rateBuckets = new Map();
+function rateLimit(key, max, windowMs) {
+  const now = Date.now(), b = rateBuckets.get(key);
+  if (!b || now >= b.reset) { rateBuckets.set(key,{count:1,reset:now+windowMs}); return true; }
+  if (b.count >= max) return false;
+  b.count++;
+  return true;
+}
+setInterval(() => { const now=Date.now(); for (const [k,b] of rateBuckets) if (b.reset<=now) rateBuckets.delete(k); },60000).unref();
+
+function admin(req,res,next) {
+  if (!process.env.ADMIN_USER_ID || String(req.user.id)!==String(process.env.ADMIN_USER_ID))
+    return res.status(403).json({error:"Keine Admin-Berechtigung."});
+  next();
+}
 const wss = new WebSocketServer({ server });
 
 app.use(express.json({ limit: "32kb" }));
@@ -102,6 +118,20 @@ async function initDb() {
       target_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       PRIMARY KEY(user_id, target_id)
     );
+
+    CREATE TABLE IF NOT EXISTS reports(
+      id BIGSERIAL PRIMARY KEY,
+      reporter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+      message_id BIGINT,
+      message_type TEXT,
+      reason TEXT NOT NULL,
+      details TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      resolved_at TIMESTAMPTZ
+    );
+    CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC);
   `);
 
   for (const name of ["Lounge", "Flirt", "Regional"]) {
@@ -149,6 +179,7 @@ function broadcastUser(uid, payload) {
 }
 
 app.post("/api/register", async (req, res) => {
+  if (!rateLimit("register:"+req.ip,5,60*60*1000)) return res.status(429).json({error:"Zu viele Registrierungsversuche. Bitte später erneut versuchen."});
   const { nick, password, age, gender = "d", city = "" } = req.body || {};
   if (typeof nick !== "string" || nick.trim().length < 2 || nick.trim().length > 24)
     return res.status(400).json({ error: "Nickname muss 2–24 Zeichen haben." });
@@ -176,6 +207,7 @@ app.post("/api/register", async (req, res) => {
 });
 
 app.post("/api/login", async (req, res) => {
+  if (!rateLimit("login:"+req.ip,15,15*60*1000)) return res.status(429).json({error:"Zu viele Loginversuche. Bitte später erneut versuchen."});
   const { nick, password } = req.body || {};
   try {
     const r = await query(
@@ -194,7 +226,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.get("/api/me", auth, async (req, res) => {
-  res.json(await userPublic(req.user.id));
+  res.json({ ...(await userPublic(req.user.id)), is_admin: String(req.user.id) === String(process.env.ADMIN_USER_ID || "") });
 });
 
 app.get("/api/users", auth, async (req, res) => {
@@ -315,6 +347,42 @@ app.get("/api/dm/:id", auth, async (req, res) => {
   res.json(r.rows.reverse());
 });
 
+
+app.post("/api/report", auth, async (req,res) => {
+  if (!rateLimit("report:"+req.user.id,10,60*60*1000)) return res.status(429).json({error:"Zu viele Meldungen. Bitte später erneut versuchen."});
+  const {targetUserId,messageId,messageType,reason,details}=req.body||{};
+  if (typeof reason!=="string" || reason.trim().length<3 || reason.trim().length>100) return res.status(400).json({error:"Bitte einen gültigen Meldegrund angeben."});
+  const target=targetUserId==null?null:Number(targetUserId), msg=messageId==null?null:Number(messageId);
+  if (target!=null && !Number.isInteger(target)) return res.status(400).json({error:"Ungültiger Benutzer."});
+  if (msg!=null && !Number.isInteger(msg)) return res.status(400).json({error:"Ungültige Nachricht."});
+  await query("INSERT INTO reports(reporter_id,target_user_id,message_id,message_type,reason,details) VALUES($1,$2,$3,$4,$5,$6)",[req.user.id,target,msg,String(messageType||"").slice(0,20),reason.trim(),String(details||"").slice(0,1000)]);
+  res.json({ok:true});
+});
+
+app.get("/api/admin/reports", auth, admin, async (req,res) => {
+  const r=await query("SELECT r.*, reporter.nick AS reporter_nick, target.nick AS target_nick FROM reports r JOIN users reporter ON reporter.id=r.reporter_id LEFT JOIN users target ON target.id=r.target_user_id WHERE r.status='open' ORDER BY r.created_at ASC LIMIT 100");
+  res.json(r.rows);
+});
+
+app.patch("/api/admin/reports/:id", auth, admin, async (req,res) => {
+  const status=String(req.body?.status||"");
+  if (!["resolved","rejected"].includes(status)) return res.status(400).json({error:"Ungültiger Status."});
+  const r=await query("UPDATE reports SET status=$1,resolved_at=NOW() WHERE id=$2 RETURNING id,status",[status,Number(req.params.id)]);
+  if (!r.rows[0]) return res.status(404).json({error:"Meldung nicht gefunden."});
+  res.json(r.rows[0]);
+});
+
+app.delete("/api/admin/users/:id", auth, admin, async (req,res) => {
+  const id=Number(req.params.id);
+  if (!Number.isInteger(id) || String(id)===String(req.user.id)) return res.status(400).json({error:"Ungültiger Benutzer."});
+  const u=await query("SELECT avatar_url FROM users WHERE id=$1",[id]);
+  if (!u.rows[0]) return res.status(404).json({error:"Benutzer nicht gefunden."});
+  const files=await query("SELECT url FROM profile_images WHERE user_id=$1 UNION ALL SELECT image_url AS url FROM messages WHERE user_id=$1 AND image_url IS NOT NULL UNION ALL SELECT image_url AS url FROM direct_messages WHERE sender_id=$1 AND image_url IS NOT NULL",[id]);
+  await query("DELETE FROM users WHERE id=$1",[id]);
+  for (const url of [u.rows[0].avatar_url,...files.rows.map(x=>x.url)].filter(Boolean)) fs.rm(path.join(UPLOAD_DIR,path.basename(url)),{force:true},()=>{});
+  res.json({ok:true});
+});
+
 app.post("/api/favorite/:id", auth, async (req, res) => {
   await query(
     "INSERT INTO favorites(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
@@ -355,6 +423,7 @@ wss.on("connection", async (ws, req) => {
 
     ws.on("message", async raw => {
       try {
+        if (!rateLimit("ws:"+ws.userId,60,10000)) return ws.send(JSON.stringify({type:"error",error:"Zu viele Nachrichten. Bitte langsamer."}));
         const x = JSON.parse(raw.toString());
 
         if (x.type === "join_room") {
@@ -368,11 +437,12 @@ wss.on("connection", async (ws, req) => {
         if (x.type === "room_message") {
           if (!ws.roomId || (typeof x.text !== "string" && !x.imageUrl)) return;
           const text = x.text.trim().slice(0, 1000);
-          if (!text && !x.imageUrl) return;
+          const imageUrl = typeof x.imageUrl==="string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(x.imageUrl) ? x.imageUrl : null;
+          if (!text && !imageUrl) return;
 
           const r = await query(
             "INSERT INTO messages(room_id,user_id,text,image_url) VALUES($1,$2,$3,$4) RETURNING id",
-            [ws.roomId, ws.userId, text || "", x.imageUrl || null]
+            [ws.roomId, ws.userId, text || "", imageUrl]
           );
           const m = await query(
             `SELECT m.id,m.text,m.image_url,m.created_at,u.nick
@@ -386,7 +456,8 @@ wss.on("connection", async (ws, req) => {
         if (x.type === "dm") {
           const to = Number(x.to);
           const text = String(x.text || "").trim().slice(0, 1000);
-          if (!to || (!text && !x.imageUrl) || String(to) === ws.userId) return;
+          const imageUrl = typeof x.imageUrl==="string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(x.imageUrl) ? x.imageUrl : null;
+          if (!to || (!text && !imageUrl) || String(to) === ws.userId) return;
           const blocked = await query(
             "SELECT 1 FROM blocks WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1) LIMIT 1",
             [ws.userId, to]
@@ -396,7 +467,7 @@ wss.on("connection", async (ws, req) => {
           const r = await query(
             `INSERT INTO direct_messages(sender_id,receiver_id,text,image_url)
              VALUES($1,$2,$3,$4) RETURNING id`,
-            [ws.userId, to, text || "", x.imageUrl || null]
+            [ws.userId, to, text || "", imageUrl]
           );
           const m = await query(
             `SELECT d.id,d.text,d.image_url,d.created_at,u.nick,d.sender_id
@@ -419,6 +490,16 @@ wss.on("connection", async (ws, req) => {
   } catch {
     ws.close(1008, "Unauthorized");
   }
+});
+
+app.delete("/api/me", auth, async (req,res) => {
+  const id=req.user.id, u=await query("SELECT avatar_url FROM users WHERE id=$1",[id]);
+  if (!u.rows[0]) return res.status(404).json({error:"Konto nicht gefunden."});
+  const files=await query("SELECT url FROM profile_images WHERE user_id=$1 UNION ALL SELECT image_url AS url FROM messages WHERE user_id=$1 AND image_url IS NOT NULL UNION ALL SELECT image_url AS url FROM direct_messages WHERE sender_id=$1 AND image_url IS NOT NULL",[id]);
+  await query("DELETE FROM users WHERE id=$1",[id]);
+  for (const url of [u.rows[0].avatar_url,...files.rows.map(x=>x.url)].filter(Boolean)) fs.rm(path.join(UPLOAD_DIR,path.basename(url)),{force:true},()=>{});
+  online.delete(String(id));
+  res.json({ok:true});
 });
 
 app.get("/api/health", (req, res) => {
