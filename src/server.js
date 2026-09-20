@@ -353,6 +353,24 @@ app.get("/api/rooms/:id/messages", auth, async (req, res) => {
   res.json(r.rows.reverse());
 });
 
+app.get("/api/dms", auth, async (req,res) => {
+  const r = await query(`
+    SELECT DISTINCT ON (u.id)
+      u.id AS user_id,u.nick,u.age,u.state,u.avatar_url,
+      (SELECT COUNT(*) FROM direct_messages z
+       WHERE z.receiver_id=$1 AND z.sender_id=u.id) AS unread_count,
+      d.text,d.image_url,d.created_at
+    FROM users u
+    JOIN direct_messages d
+      ON ((d.sender_id=$1 AND d.receiver_id=u.id) OR (d.sender_id=u.id AND d.receiver_id=$1))
+    WHERE u.id<>$1
+      AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=u.id)
+    ORDER BY u.id,d.id DESC
+  `,[req.user.id]);
+  const rows=r.rows.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  res.json(rows.map(x=>({...x,online:(online.get(String(x.user_id))?.size||0)>0,unread_count:Number(x.unread_count||0)})));
+});
+
 app.get("/api/dm/:id", auth, async (req, res) => {
   const otherId = Number(req.params.id);
   if (!Number.isInteger(otherId) || otherId <= 0 || otherId === Number(req.user.id))
