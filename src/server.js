@@ -136,8 +136,16 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS reports_status_idx ON reports(status, created_at DESC);
   `);
 
-  for (const name of ["Lounge", "Flirt", "Regional"]) {
+  for (const name of ["Lounge", "Flirt"]) {
     await query("INSERT INTO rooms(name) VALUES($1) ON CONFLICT(name) DO NOTHING", [name]);
+  }
+  const states = [
+    "Baden-Württemberg","Bayern","Berlin","Brandenburg","Bremen","Hamburg","Hessen",
+    "Mecklenburg-Vorpommern","Niedersachsen","Nordrhein-Westfalen","Rheinland-Pfalz",
+    "Saarland","Sachsen","Sachsen-Anhalt","Schleswig-Holstein","Thüringen"
+  ];
+  for (const state of states) {
+    await query("INSERT INTO rooms(name) VALUES($1) ON CONFLICT(name) DO NOTHING", ["Regional · " + state]);
   }
 }
 
@@ -195,7 +203,7 @@ app.post("/api/register", async (req, res) => {
     const r = await query(
       `INSERT INTO users(nick,password_hash,age,gender,state)
        VALUES($1,$2,$3,$4,$5)
-       RETURNING id,nick,age,gender,city,about`,
+       RETURNING id,nick,age,gender,state,about`,
       [nick.trim(), hash, age, gender, String(state || "").slice(0, 40)]
     );
     const u = r.rows[0];
@@ -323,7 +331,14 @@ app.delete("/api/dm-message/:id", auth, async (req, res) => {
   res.json({ ok: true });
 });
 app.get("/api/rooms", auth, async (req, res) => {
-  const r = await query("SELECT id,name FROM rooms ORDER BY id");
+  const u = await userPublic(req.user.id);
+  const r = await query(
+    `SELECT id,name FROM rooms
+     WHERE name IN ('Lounge','Flirt')
+        OR name = $1
+     ORDER BY id`,
+    [u?.state ? "Regional · " + u.state : ""]
+  );
   res.json(r.rows);
 });
 
@@ -432,6 +447,13 @@ wss.on("connection", async (ws, req) => {
           const r = await query("SELECT id,name FROM rooms WHERE id=$1", [Number(x.roomId)]);
           const room = r.rows[0];
           if (!room) return;
+          if (room.name.startsWith("Regional · ")) {
+            const u = await userPublic(ws.userId);
+            if (!u?.state || room.name !== "Regional · " + u.state) {
+              ws.send(JSON.stringify({ type: "error", error: "Dieser Regionalchat gehört nicht zu deinem Bundesland." }));
+              return;
+            }
+          }
           ws.roomId = Number(room.id);
           ws.send(JSON.stringify({ type: "joined_room", room }));
         }
