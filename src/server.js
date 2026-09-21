@@ -550,7 +550,20 @@ app.delete("/api/favorite/:id", auth, async (req, res) => {
 });
 
 app.post("/api/block/:id", auth, async (req, res) => {
-  await query("INSERT INTO blocks(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[req.user.id,Number(req.params.id)]);
+  const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0 || targetId === Number(req.user.id))
+    return res.status(400).json({error:"Ungültiger Benutzer."});
+  const target = await query("SELECT id FROM users WHERE id=$1",[targetId]);
+  if (!target.rows[0]) return res.status(404).json({error:"Benutzer nicht gefunden."});
+  await query("INSERT INTO blocks(user_id,target_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[req.user.id,targetId]);
+  res.json({ok:true});
+});
+
+app.delete("/api/block/:id", auth, async (req, res) => {
+  const targetId = Number(req.params.id);
+  if (!Number.isInteger(targetId) || targetId <= 0 || targetId === Number(req.user.id))
+    return res.status(400).json({error:"Ungültiger Benutzer."});
+  await query("DELETE FROM blocks WHERE user_id=$1 AND target_id=$2",[req.user.id,targetId]);
   res.json({ok:true});
 });
 
@@ -661,7 +674,9 @@ wss.on("connection", async (ws, req) => {
             "SELECT 1 FROM blocks WHERE (user_id=$1 AND target_id=$2) OR (user_id=$2 AND target_id=$1) LIMIT 1",
             [ws.userId, to]
           );
-          if (blocked.rows.length) return;
+          if (blocked.rows.length) {
+            return ws.send(JSON.stringify({type:"error",error:"Du kannst diesem Benutzer derzeit nicht schreiben."}));
+          }
 
           const r = await query(
             `INSERT INTO direct_messages(sender_id,receiver_id,text,image_url)
