@@ -58,7 +58,40 @@ function avatarFallback(){return "data:image/svg+xml,"+encodeURIComponent("<svg 
 function fillMyProfile(u){$("profileAge").value=u.age||"";$("profileState").value=u.state||"";$("profileAbout").value=u.about||""} async function openMyProfile(){try{me=await api("/api/me");$("profileNick").textContent=me.nick;fillMyProfile(me);setAvatar(me.avatar_url);$("myProfile").classList.remove("hidden");$("userProfile").classList.add("hidden");$("profilePanel").classList.add("profileOpen");}catch(e){alert(e.message)}} async function showUserProfile(id){const u=usersCache.find(x=>String(x.id)===String(id));if(!u)return;selectedUser=u;$("myProfile").classList.add("hidden");$("userProfile").classList.remove("hidden");$("profilePanel").classList.add("profileOpen");$("userProfileTitle").textContent=u.nick;$("userAvatar").src=u.avatar_url||avatarFallback();$("userAvatar").style.visibility="visible";$("userInfo").textContent=(u.age?u.age+" Jahre":"")+(u.state?" · "+u.state:"");$("userStatus").textContent=u.online?"🟢 Gerade online":"⚪ Offline";$("userAbout").textContent=u.about||"Keine Beschreibung hinterlegt.";const gs=await api("/api/users/"+id+"/gallery");$("userGallery").innerHTML=gs.map(g=>'<img src="'+g.url+'" loading="lazy">').join("");$("dmBtn").onclick=()=>openDm(id);let isFavorite=false;
   try{const favs=await api("/api/favorites");isFavorite=favs.some(x=>String(x.id)===String(id))}catch(e){}
   $("favBtn").textContent=isFavorite?"⭐ Entfavorisieren":"⭐ Favorisieren";
-  $("favBtn").onclick=async()=>{try{if(isFavorite){await api("/api/favorite/"+id,{method:"DELETE"});isFavorite=false;$("favBtn").textContent="⭐ Favorisieren"}else{await api("/api/favorite/"+id,{method:"POST"});isFavorite=true;$("favBtn").textContent="⭐ Entfavorisieren"}await loadUsers()}catch(e){alert(e.message)}};let ms=await api("/api/match-status/"+id);$("matchBtn")?.remove();$("favBtn").insertAdjacentHTML("afterend",'<button id="matchBtn" class="secondary">'+(ms.matched?"❤️ Match":ms.interested?"❤️ Interesse gesendet":"❤️ Interesse")+"</button>");$("matchBtn").onclick=async()=>{try{if(ms.interested&&!ms.matched){await api("/api/match/"+id,{method:"DELETE"});ms={interested:false,matched:false};$("matchBtn").textContent="❤️ Interesse";return}const r=await api("/api/match/"+id,{method:"POST"});ms={interested:true,matched:r.matched};$("matchBtn").textContent=r.matched?"❤️ Match":"❤️ Interesse gesendet";if(r.matched){alert("Ihr habt jetzt ein Match! ❤️");loadMatches()}}catch(e){alert(e.message)}};$("blockBtn").onclick=async()=>{if(confirm("Diesen Benutzer blockieren?")){await api("/api/block/"+id,{method:"POST"});await loadUsers();$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");$("profilePanel").classList.remove("profileOpen");selectedUser=null}}}
+  $("favBtn").onclick=async()=>{try{if(isFavorite){await api("/api/favorite/"+id,{method:"DELETE"});isFavorite=false;$("favBtn").textContent="⭐ Favorisieren"}else{await api("/api/favorite/"+id,{method:"POST"});isFavorite=true;$("favBtn").textContent="⭐ Entfavorisieren"}await loadUsers()}catch(e){alert(e.message)}};let ms=await api("/api/match-status/"+id);$("matchBtn")?.remove();$("favBtn").insertAdjacentHTML("afterend",'<button id="matchBtn" class="secondary">'+(ms.matched?"❤️ Match":ms.interested?"❤️ Interesse gesendet":"❤️ Interesse")+"</button>");$("matchBtn").onclick=async()=>{try{if(ms.interested&&!ms.matched){await api("/api/match/"+id,{method:"DELETE"});ms={interested:false,matched:false};$("matchBtn").textContent="❤️ Interesse";return}const r=await api("/api/match/"+id,{method:"POST"});ms={interested:true,matched:r.matched};$("matchBtn").textContent=r.matched?"❤️ Match":"❤️ Interesse gesendet";if(r.matched){alert("Ihr habt jetzt ein Match! ❤️");loadMatches()}}catch(e){alert(e.message)}};let isBlocked=false;
+  try{
+    const r=await api("/api/dm/"+id);
+    isBlocked=false;
+  }catch(e){
+    isBlocked=String(e.message||"").includes("blockiert");
+  }
+  $("blockBtn").textContent=isBlocked?"🔓 Entblocken":"🚫 Blockieren";
+  $("blockBtn").classList.toggle("danger",!isBlocked);
+  $("blockBtn").classList.toggle("secondary",isBlocked);
+  $("blockBtn").onclick=async()=>{
+    try{
+      if(isBlocked){
+        await api("/api/block/"+id,{method:"DELETE"});
+        isBlocked=false;
+        $("blockBtn").textContent="🚫 Blockieren";
+        $("blockBtn").classList.add("danger");
+        $("blockBtn").classList.remove("secondary");
+        await loadUsers();
+      }else{
+        if(!confirm("Diesen Benutzer blockieren?"))return;
+        await api("/api/block/"+id,{method:"POST"});
+        isBlocked=true;
+        $("blockBtn").textContent="🔓 Entblocken";
+        $("blockBtn").classList.remove("danger");
+        $("blockBtn").classList.add("secondary");
+        await loadUsers();
+        $("userProfile").classList.add("hidden");
+        $("myProfile").classList.remove("hidden");
+        $("profilePanel").classList.remove("profileOpen");
+        selectedUser=null;
+      }
+    }catch(e){alert(e.message)}
+  }}
 $("editProfileBtn").onclick=openMyProfile; $("profileClose").onclick=()=>{$("profilePanel").classList.remove("profileOpen");$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");selectedUser=null};
 async function loadOnline(){
   try{
