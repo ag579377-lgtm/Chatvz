@@ -567,6 +567,17 @@ app.delete("/api/block/:id", auth, async (req, res) => {
   res.json({ok:true});
 });
 
+app.get("/api/blocks", auth, async (req,res) => {
+  const r = await query(`
+    SELECT u.id,u.nick,u.age,u.gender,u.state,u.about,u.avatar_url
+    FROM blocks b JOIN users u ON u.id=b.target_id
+    WHERE b.user_id=$1
+    ORDER BY u.nick
+    LIMIT 100
+  `, [req.user.id]);
+  res.json(r.rows);
+});
+
 app.get("/api/online", auth, async (req,res) => {
   const r=await query(`SELECT id,nick,age,gender,state,about,avatar_url FROM users
     WHERE id<>$1 AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.user_id=$1 AND b.target_id=users.id)
