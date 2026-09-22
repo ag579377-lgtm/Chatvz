@@ -323,8 +323,19 @@ app.get("/api/users/:id/gallery", auth, async (req, res) => {
 app.post("/api/me/avatar", auth, upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "Bitte ein gültiges Bild hochladen." });
   const url = "/uploads/" + req.file.filename;
+  const old = await query("SELECT avatar_url FROM users WHERE id=$1", [req.user.id]);
   await query("UPDATE users SET avatar_url=$1 WHERE id=$2", [url, req.user.id]);
+  const oldUrl = old.rows[0]?.avatar_url;
+  if (oldUrl) fs.rm(path.join(UPLOAD_DIR, path.basename(oldUrl)), { force: true }, () => {});
   res.json({ url });
+});
+
+app.delete("/api/me/avatar", auth, async (req, res) => {
+  const old = await query("SELECT avatar_url FROM users WHERE id=$1", [req.user.id]);
+  const oldUrl = old.rows[0]?.avatar_url;
+  await query("UPDATE users SET avatar_url=NULL WHERE id=$1", [req.user.id]);
+  if (oldUrl) fs.rm(path.join(UPLOAD_DIR, path.basename(oldUrl)), { force: true }, () => {});
+  res.json({ ok: true });
 });
 
 app.post("/api/me/gallery", auth, upload.array("images", 10), async (req, res) => {
