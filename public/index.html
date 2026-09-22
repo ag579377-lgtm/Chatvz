@@ -4,23 +4,268 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ChatiNova</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
-:root{box-sizing:border-box;--bg:#090c14;--panel:#10141f;--panel2:#141a29;--line:rgba(124,92,255,.16);--text:#e9ecf5;--muted:#7d84a0;--violet:#7c5cff;--violetSoft:rgba(124,92,255,.35);--cyan:#35e6d0;--bubbleMe:linear-gradient(135deg,#7c5cff 0%,#5b3df0 100%);--bubbleThem:#161c2c;--danger:#ff6b6b}
-*{box-sizing:border-box}html,body{width:100%;height:100%;min-height:100%;margin:0}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;position:relative}
-body:before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(circle at 18% 12%,rgba(124,92,255,.16),transparent 45%),radial-gradient(circle at 85% 85%,rgba(53,230,208,.1),transparent 40%),var(--bg)}
-body:after{content:"";position:fixed;inset:-2px;z-index:-1;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(ellipse 80% 60% at 50% 20%,black 10%,transparent 75%);opacity:.45;pointer-events:none}
-button,input,textarea,select{font:inherit}button{cursor:pointer}
-.hidden{display:none!important}.auth{min-height:100vh;display:grid;place-items:center;padding:20px;background:transparent}.card{background:rgba(16,20,31,.94);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 20px 60px #0008;width:min(440px,100%);backdrop-filter:blur(16px)}h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif}h1{margin:0 0 8px}p{color:var(--muted)}
-input,textarea,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:7px 0 12px;background:var(--panel2);color:var(--text);outline:none}input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,92,255,.12)}button{border:1px solid transparent;border-radius:11px;padding:11px 15px;background:var(--bubbleMe);color:#fff;font-weight:700;transition:.15s}button:hover{transform:translateY(-1px);filter:brightness(1.08)}button.secondary{background:var(--panel2);border-color:var(--line);color:var(--muted)}button.danger{background:rgba(255,107,107,.13);border-color:rgba(255,107,107,.3);color:#ff8b8b}.muted{color:var(--muted)}.small{font-size:12px}
-.app{height:100vh;display:grid;grid-template-columns:300px minmax(0,1fr) 280px;background:transparent}.side{border-right:1px solid var(--line);padding:18px;overflow:auto;min-height:0;background:rgba(10,13,22,.82);backdrop-filter:blur(18px)}.main{display:flex;flex-direction:column;min-width:0;background:rgba(9,12,20,.45)}.top{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:rgba(16,20,31,.7);backdrop-filter:blur(14px);flex-shrink:0}.content{display:flex;flex:1;min-height:0}
-.side h2{color:var(--text);letter-spacing:.3px}.nav{display:flex;gap:6px;margin:14px 0}.nav button{flex:1;padding:9px 6px}.room,.user{padding:11px;border-radius:12px;margin-bottom:6px;cursor:pointer;border:1px solid transparent}.room:hover,.user:hover{background:rgba(124,92,255,.08);border-color:var(--line)}.online{width:7px;height:7px;background:var(--cyan);border-radius:50%;display:inline-block;margin-right:7px;box-shadow:0 0 7px var(--cyan)}
-.messages{flex:1;overflow:auto;padding:20px;background:transparent}.msg{max-width:75%;margin:10px 0;position:relative;padding:11px 14px 11px 50px;border-radius:16px;background:var(--bubbleThem);border:1px solid var(--line);line-height:1.5;box-shadow:0 4px 18px #0002}.mine{margin-left:auto;background:var(--bubbleMe);color:#fff;border-color:transparent;box-shadow:0 4px 18px rgba(124,92,255,.28)}.meta{font-size:11px;opacity:.65;margin-bottom:4px}.chatMessageAvatar{position:absolute;left:10px;top:10px;width:30px;height:30px;min-width:30px;max-width:30px;aspect-ratio:1/1;display:block;margin:0;border-radius:50%;object-fit:cover;background:#1c2435;border:1px solid var(--line)}.msg img{max-width:280px;max-height:280px;border-radius:10px;display:block;margin-top:6px;object-fit:cover}.composer{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:rgba(16,20,31,.82);backdrop-filter:blur(14px);flex-shrink:0}.composer input{min-width:0;margin:0}.composer button{flex:0 0 auto}.file{display:none}.backChat{display:none}
-.profile{padding:18px;overflow:auto;background:rgba(16,20,31,.72);border-left:1px solid var(--line);backdrop-filter:blur(18px)}.profile h3{margin:0 0 14px}.profile .profileHero{background:linear-gradient(180deg,rgba(124,92,255,.09),rgba(16,20,31,.2));border:1px solid var(--line);border-radius:16px;padding:18px 14px 14px;text-align:center;margin-bottom:14px}.profile .profileHero .avatar{width:118px;height:118px;margin:0 auto 12px;border:3px solid var(--violet);box-shadow:0 0 24px var(--violetSoft)}.profile .profileHead{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}.profile .profileHead .avatar{width:78px;height:78px;flex:0 0 78px}.profile .profileName{font-size:20px;margin:0 0 4px}.profile .profileInfo{font-size:13px;color:var(--muted)}.profile .profileStatus{display:inline-flex;align-items:center;gap:5px;margin-top:7px;font-size:12px;color:var(--muted)}.profile .profileAbout{font-size:14px;line-height:1.5;margin:12px 4px 0}.profile .profileActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:14px 0}.profile .profileActions button:first-child{grid-column:1/-1}.profile .profileSection{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.profile .profileSection h4{margin:0 0 10px}.profile button{padding:10px 12px}.avatar{width:90px;height:90px;border-radius:50%;object-fit:cover;background:#1c2435;display:block}.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--line)}.footer{font-size:11px;color:var(--muted);text-align:center;padding:10px}.footer .legalLink{padding:6px 8px;font-size:11px}
-.chatList{padding:8px}.chatItem{display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;cursor:pointer}.chatItem:hover{background:rgba(124,92,255,.08)}.chatItem .chatAvatar{width:42px;height:42px;min-width:42px;max-width:42px;border-radius:50%;object-fit:cover;background:#1c2435;border:1px solid var(--line)}.chatItem .chatText{min-width:0;flex:1}.chatItem .chatAction{flex:0 0 auto;padding:7px 9px}.user .chatAction{margin-left:auto;padding:7px 9px}.chatItem .preview{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.adminReport{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:rgba(20,26,41,.7)}
-@media(max-width:1100px){.app{grid-template-columns:220px 1fr}.profile{display:none}.messages{padding:16px}.msg{max-width:82%}}
-@media(max-width:700px){html,body{width:100%;height:100%;min-height:100dvh}.auth{width:100%;height:100dvh;min-height:100dvh;padding:0;display:block}.auth .card{width:100%;min-height:100dvh;border-radius:0;box-shadow:none;padding:22px 16px}.app{display:flex;width:100%;height:100dvh;min-height:100dvh;flex-direction:column}.side{display:block;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px;overflow:hidden;flex:0 0 auto;background:rgba(10,13,22,.94)}.side.browseMode{position:fixed;inset:0;z-index:20;width:100%;height:100dvh;overflow-y:auto;padding:10px 12px;background:var(--bg)}.side.browseMode~.main{display:none}.side.mobileChatMode{display:none}.side.mobileChatMode~.main{display:flex;position:fixed;inset:0;z-index:10;width:100%;height:100dvh}.side h2{display:none}.side #meLabel{display:inline-block;margin:0 8px 0 0}.side #logout{padding:7px 10px}.side .nav{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 0}.side .nav button{min-height:42px;padding:9px 4px;white-space:nowrap}.side #roomSection,.side #userSection,.side #chatListSection,.side #onlineSection,.side #matchesSection{margin-top:4px;padding-bottom:2px}.side #users,.side #rooms,.side #chatList{max-height:none;overflow:visible}.side #roomSection h3,.side #userSection h3,.side #chatListSection h3,.side #onlineSection h3,.side #matchesSection h3{margin:0;padding:6px 2px;background:transparent}.main{min-height:0;flex:1;display:flex}.top{padding:10px 12px;min-height:48px}.messages{padding:12px 10px;min-height:0}.msg{max-width:88%;font-size:15px;padding-left:48px}.msg img{max-width:min(280px,75vw);height:auto}.composer{padding:8px;gap:6px;position:sticky;bottom:0;z-index:2}.composer input{font-size:16px;padding:11px 10px}.composer button{padding:10px 11px}.composer label button{width:44px}.user,.room,.chatItem{padding:10px;margin-bottom:4px}.profile.profileOpen{display:block;position:fixed;inset:0;z-index:30;width:100%;height:100dvh;padding:16px;overflow-y:auto;border:0}.profile.profileOpen .profileClose{display:inline-block;margin-bottom:12px}.profile.profileOpen .profileHero .avatar{width:118px;height:118px;flex-basis:118px}.profile.profileOpen .profileActions{grid-template-columns:1fr 1fr}}
-@media(max-width:420px){.composer{gap:5px}.composer #text{min-width:0}.composer #send{padding:10px 9px}.messages{padding:10px 7px}.msg{max-width:92%;padding:9px 11px 9px 48px}}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root{
+ --bg:#050817;--bg2:#071025;--panel:#0b1530;--panel2:#101d3d;--panel3:#14234a;
+ --line:rgba(89,116,255,.22);--lineStrong:rgba(95,126,255,.48);
+ --text:#f4f7ff;--muted:#8e9bc0;--violet:#7b35ff;--violet2:#5b2cff;
+ --blue:#267cff;--cyan:#24e3d0;--pink:#d34cff;--green:#20e7b0;
+ --bubbleMe:linear-gradient(135deg,#7b27ff 0%,#246eff 100%);
+ --bubbleThem:linear-gradient(135deg,rgba(19,38,76,.96),rgba(12,27,56,.96));
+}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0}
+body{
+ font-family:Inter,system-ui,sans-serif;color:var(--text);background:var(--bg);
+ overflow:hidden;position:relative;
+}
+body:before{
+ content:"";position:fixed;inset:0;z-index:-3;
+ background:
+ radial-gradient(circle at 18% 10%,rgba(93,43,255,.30),transparent 32%),
+ radial-gradient(circle at 78% 24%,rgba(0,174,255,.13),transparent 30%),
+ radial-gradient(circle at 72% 92%,rgba(38,226,208,.12),transparent 34%),
+ linear-gradient(135deg,#040714,#071126 52%,#050817);
+}
+body:after{
+ content:"";position:fixed;inset:-2px;z-index:-2;pointer-events:none;opacity:.26;
+ background-image:linear-gradient(rgba(94,119,255,.17) 1px,transparent 1px),linear-gradient(90deg,rgba(94,119,255,.17) 1px,transparent 1px);
+ background-size:42px 42px;
+ mask-image:radial-gradient(ellipse 90% 70% at 50% 45%,black 10%,transparent 78%);
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif}
+h1,h2,h3,h4,p{margin-top:0}
+.muted{color:var(--muted)}.small{font-size:12px}
+.auth{min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{
+ background:rgba(8,17,39,.92);border:1px solid var(--lineStrong);border-radius:24px;
+ padding:30px;width:min(440px,100%);box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 50px rgba(86,46,255,.10);
+ backdrop-filter:blur(22px);
+}
+input,textarea,select{
+ width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:13px;
+ margin:7px 0 12px;background:rgba(13,28,58,.9);color:var(--text);outline:none;
+}
+input::placeholder,textarea::placeholder{color:#66769e}
+input:focus,textarea:focus,select:focus{border-color:#6b57ff;box-shadow:0 0 0 3px rgba(106,73,255,.14)}
+button{
+ border:1px solid transparent;border-radius:13px;padding:11px 15px;
+ background:var(--bubbleMe);color:#fff;font-weight:700;
+ box-shadow:0 7px 22px rgba(84,42,255,.18);transition:.16s ease;
+}
+button:hover{transform:translateY(-1px);filter:brightness(1.08)}
+button.secondary{
+ background:rgba(12,26,55,.82);border-color:var(--lineStrong);color:#dce4ff;box-shadow:none;
+}
+button.danger{background:rgba(255,67,112,.10);border-color:rgba(255,91,130,.42);color:#ff8ca8}
+.app{
+ height:100vh;display:grid;grid-template-columns:330px minmax(0,1fr) 390px;
+ background:transparent;
+}
+.side{
+ border-right:1px solid var(--line);padding:20px 18px;overflow:auto;min-height:0;
+ background:linear-gradient(180deg,rgba(5,13,32,.94),rgba(5,11,28,.82));
+ backdrop-filter:blur(22px);
+}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:rgba(2,8,23,.38)}
+.top{
+ min-height:76px;padding:12px 22px;border-bottom:1px solid var(--line);
+ display:flex;justify-content:space-between;align-items:center;
+ background:rgba(7,16,36,.78);backdrop-filter:blur(20px);flex-shrink:0;
+}
+.top>div{min-width:0}
+.chatHeader{display:flex;align-items:center;gap:13px}
+.chatHeaderAvatar{
+ width:48px;height:48px;min-width:48px;border-radius:50%;object-fit:cover;
+ border:2px solid #7654ff;box-shadow:0 0 22px rgba(111,67,255,.42);background:#14234a;
+}
+.chatHeaderTitle{font-family:'Space Grotesk';font-size:18px;font-weight:700}
+.chatHeaderSub{margin-top:2px}
+.backChat{display:none;margin-right:8px}
+.statusDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);margin-right:5px}
+.content{display:flex;flex:1;min-height:0}
+.side h2{
+ font-size:25px;margin:2px 0 18px;letter-spacing:-.5px;
+ background:linear-gradient(90deg,#fff,#9caeff 50%,#55e5ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+#meLabel{
+ display:block;padding:13px 14px;border:1px solid var(--line);border-radius:17px;
+ background:linear-gradient(135deg,rgba(17,35,73,.86),rgba(9,19,43,.8));margin-bottom:10px;
+ color:#e8edff;font-weight:600;
+}
+.side>div[style*="display:flex"]{margin-bottom:13px}
+.side>div[style*="display:flex"] button:first-child{flex:1}
+.nav{display:flex;flex-direction:column;gap:6px;margin:10px 0 20px}
+.nav button{
+ width:100%;text-align:left;padding:12px 14px;background:transparent;border:1px solid transparent;
+ box-shadow:none;color:#b8c4e5;font-weight:600;
+}
+.nav button:hover{background:rgba(62,90,180,.10);border-color:var(--line)}
+.nav button:not(.secondary){
+ background:linear-gradient(90deg,rgba(103,43,255,.80),rgba(31,107,255,.70));
+ border-color:rgba(111,86,255,.78);box-shadow:0 8px 28px rgba(82,48,255,.28);color:#fff;
+}
+.room,.user{
+ padding:11px 12px;border-radius:13px;margin-bottom:6px;cursor:pointer;
+ border:1px solid transparent;background:rgba(9,22,48,.44);display:flex;align-items:center;gap:9px;
+}
+.room:hover,.user:hover{background:rgba(74,87,190,.12);border-color:var(--line)}
+.room{font-weight:600;color:#cbd6f5}
+.online{
+ width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;
+ margin-right:6px;box-shadow:0 0 8px var(--green)
+}
+.side h3{
+ font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:#7888b3;
+ margin:18px 3px 9px;
+}
+#search{margin-bottom:8px}
+.uavatar{
+ width:40px;height:40px;min-width:40px;border-radius:50%;object-fit:cover;
+ border:1px solid var(--lineStrong);background:#17284f;
+}
+.udata{min-width:0;display:flex;flex-direction:column;gap:3px;flex:1}
+.chatAction{margin-left:auto!important;padding:7px 9px!important}
+.messages{
+ flex:1;overflow:auto;padding:28px 34px 22px;
+ background:
+ radial-gradient(circle at 75% 20%,rgba(76,47,255,.10),transparent 34%),
+ radial-gradient(circle at 40% 85%,rgba(0,180,255,.06),transparent 30%);
+}
+.msg{
+ max-width:min(72%,650px);margin:14px 0;position:relative;padding:13px 17px 13px 58px;
+ border-radius:20px;background:var(--bubbleThem);border:1px solid rgba(72,103,180,.24);
+ line-height:1.5;box-shadow:0 8px 28px rgba(0,0,0,.18);
+}
+.mine{
+ margin-left:auto;background:var(--bubbleMe);color:#fff;border-color:transparent;
+ border-bottom-right-radius:7px;box-shadow:0 9px 30px rgba(81,40,255,.30);
+}
+.msg:not(.mine){border-bottom-left-radius:7px}
+.meta{font-size:11px;opacity:.65;margin-bottom:5px}
+.chatMessageAvatar{
+ position:absolute;left:11px;top:12px;width:36px;height:36px;min-width:36px;max-width:36px;
+ border-radius:50%;object-fit:cover;background:#17284f;border:2px solid rgba(113,91,255,.72);
+}
+.msg img{max-width:320px;max-height:320px;border-radius:13px;display:block;margin-top:8px;object-fit:cover}
+.composer{
+ display:flex;gap:9px;padding:13px 16px;border:1px solid var(--line);
+ margin:0 16px 16px;border-radius:20px;background:rgba(8,19,43,.86);
+ backdrop-filter:blur(22px);box-shadow:0 14px 40px rgba(0,0,0,.28);flex-shrink:0;
+}
+.composer input{min-width:0;margin:0;background:rgba(12,27,56,.86);border-radius:15px}
+.composer button{flex:0 0 auto}
+.file{display:none}
+.composer label button{height:46px}
+#send{height:46px;padding:0 20px;border-radius:15px}
+.profile{
+ padding:18px;overflow:auto;background:linear-gradient(180deg,rgba(9,18,40,.93),rgba(6,13,30,.88));
+ border-left:1px solid var(--line);backdrop-filter:blur(22px);
+}
+.profileClose{display:none}
+.profile h3{margin:0 0 14px}
+.profileHero{
+ background:linear-gradient(180deg,rgba(50,47,112,.20),rgba(10,23,49,.72));
+ border:1px solid var(--line);border-radius:22px;padding:18px 16px 16px;text-align:left;margin-bottom:14px;
+ overflow:hidden;
+}
+.profileHero:before{
+ content:"";display:block;height:105px;margin:-18px -16px 12px;
+ background:radial-gradient(circle at 70% 30%,rgba(71,218,255,.22),transparent 35%),linear-gradient(135deg,#172b58,#0a1837);
+ border-bottom:1px solid var(--line);
+}
+.profile .profileHero .avatar{
+ width:112px;height:112px;margin:-66px 0 12px 5px;border:3px solid #704cff;
+ box-shadow:0 0 28px rgba(102,67,255,.55);position:relative;
+}
+.profile .profileHead{display:block}
+.profile .profileHead .avatar{width:112px;height:112px;flex:0 0 112px}
+.profile .profileName{font-size:24px;margin:0 0 5px}
+.profile .profileInfo{font-size:13px;color:#a9b6d7}
+.profile .profileStatus{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:#9aa9cc}
+.profile .profileAbout{font-size:14px;line-height:1.55;margin:13px 2px 0;color:#c8d1e8}
+.profile .profileActions{display:grid;grid-template-columns:1fr;gap:8px;margin:14px 0}
+.profile .profileActions button:first-child{grid-column:auto}
+.profile .profileSection{
+ margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:18px;
+ background:rgba(12,25,53,.58)
+}
+.profile .profileSection h4{margin:0 0 10px}
+.profile button{padding:11px 12px}
+.avatar{width:94px;height:94px;border-radius:50%;object-fit:cover;background:#17284f;display:block}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:11px;border:1px solid var(--line)}
+.footer{font-size:11px;color:var(--muted);text-align:center;padding:12px}
+.footer .legalLink{padding:6px 8px;font-size:11px}
+.chatList{padding:5px 0}
+.chatItem{
+ display:flex;align-items:center;gap:10px;padding:11px;border-radius:14px;cursor:pointer;
+ border:1px solid transparent;
+}
+.chatItem:hover{background:rgba(67,86,177,.10);border-color:var(--line)}
+.chatItem .chatAvatar{width:44px;height:44px;min-width:44px;max-width:44px;border-radius:50%;object-fit:cover;background:#17284f;border:1px solid var(--lineStrong)}
+.chatItem .chatText{min-width:0;flex:1}.chatItem .chatAction{flex:0 0 auto;padding:7px 9px}
+.adminReport{border:1px solid var(--line);border-radius:14px;padding:11px;margin:8px 0;background:rgba(16,31,65,.72)}
+hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+#myProfile>div[style*="background:#f8fafc"]{
+ background:rgba(12,25,53,.65)!important;border-color:var(--line)!important;
+}
+@media(max-width:1250px){
+ .app{grid-template-columns:285px minmax(0,1fr) 330px}
+ .messages{padding-left:24px;padding-right:24px}
+}
+@media(max-width:1000px){
+ .app{grid-template-columns:250px 1fr}
+ .profile{display:none}
+ .messages{padding:20px}
+ .msg{max-width:82%}
+}
+@media(max-width:700px){
+ html,body{width:100%;height:100%;min-height:100dvh}
+ .auth{width:100%;height:100dvh;min-height:100dvh;padding:0;display:block}
+ .auth .card{width:100%;min-height:100dvh;border-radius:0;box-shadow:none;padding:22px 16px}
+ .app{display:flex;width:100%;height:100dvh;min-height:100dvh;flex-direction:column}
+ .side{display:block;border-right:0;border-bottom:1px solid var(--line);padding:10px;overflow:hidden;flex:0 0 auto}
+ .side.browseMode{position:fixed;inset:0;z-index:20;width:100%;height:100dvh;overflow-y:auto;padding:12px;background:var(--bg)}
+ .side.browseMode~.main{display:none}
+ .side.mobileChatMode{display:none}
+ .side.mobileChatMode~.main{display:flex;position:fixed;inset:0;z-index:10;width:100%;height:100dvh}
+ .side h2{display:block;font-size:21px;margin:2px 4px 7px}
+ #meLabel{padding:9px 11px;margin-bottom:7px}
+ .side .nav{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:7px 0 0}
+ .side .nav button{min-height:42px;padding:8px 3px;text-align:center;font-size:11px}
+ .side #roomSection,.side #userSection,.side #chatListSection,.side #onlineSection,.side #matchesSection{margin-top:4px;padding-bottom:2px}
+ .side #users,.side #rooms,.side #chatList{max-height:none;overflow:visible}
+ .side #roomSection h3,.side #userSection h3,.side #chatListSection h3,.side #onlineSection h3,.side #matchesSection h3{margin:0;padding:6px 2px}
+ .main{min-height:0;flex:1;display:flex}
+ .top{padding:9px 11px;min-height:62px}
+ .chatHeaderAvatar{width:40px;height:40px;min-width:40px}
+ .chatHeaderTitle{font-size:16px}
+ .messages{padding:12px 9px;min-height:0}
+ .msg{max-width:89%;font-size:15px;padding-left:51px}
+ .chatMessageAvatar{width:32px;height:32px;min-width:32px;max-width:32px;left:10px;top:11px}
+ .msg img{max-width:min(320px,78vw);height:auto}
+ .composer{padding:8px;margin:0 7px 7px;gap:6px;border-radius:17px}
+ .composer input{font-size:16px;padding:11px 10px}
+ .composer button{padding:10px 11px}
+ .composer label button{width:44px;padding:10px}
+ .profile.profileOpen{
+  display:block;position:fixed;inset:0;z-index:30;width:100%;height:100dvh;padding:12px;
+  overflow-y:auto;border:0;background:var(--bg);
+ }
+ .profile.profileOpen .profileClose{display:inline-block;margin-bottom:10px}
+ .profile.profileOpen .profileHero .avatar{width:112px;height:112px}
+ .profile.profileOpen .profileActions{grid-template-columns:1fr 1fr}
+}
+@media(max-width:420px){
+ .composer{gap:5px}
+ .messages{padding:9px 6px}
+ .msg{max-width:93%;padding:9px 10px 9px 48px}
+ #send{padding:0 13px}
+}
 </style></head>
 <body>
 <section id="auth" class="auth"><div class="card">
@@ -31,8 +276,8 @@ input,textarea,select{width:100%;padding:12px;border:1px solid var(--line);borde
 </div></section>
 <section id="legal" class="auth hidden"><div class="card" style="max-width:760px"><button class="secondary" onclick="hideLegal()">← Zurück</button><div id="legalContent"></div></div></section>
 <section id="app" class="app hidden">
-<aside id="side" class="side"><h2>ChatiNova</h2><p id="meLabel" class="muted"></p><div style="display:flex;gap:6px"><button id="editProfileBtn" class="secondary">✏️ Profil bearbeiten</button><button id="logout" class="secondary">Abmelden</button></div><nav class="nav"><button id="showRooms">💬</button><button id="showUsers" class="secondary">👥</button><button id="showChats" class="secondary">✉️ <span id="chatBadge" class="small"></span></button><button id="showOnline" class="secondary">🟢</button><button id="showMatches" class="secondary">❤️</button></nav><section id="chatListSection" class="hidden"><h3>✉️ Nachrichten</h3><div id="chatList" class="chatList"></div></section><section id="roomSection"><h3>💬 Räume</h3><div id="rooms" class="rooms"></div></section><section id="userSection" class="hidden"><h3>👥 Benutzer</h3><input id="search" placeholder="Benutzer suchen"><button id="showBlocked" class="secondary" style="width:100%;margin:4px 0 8px">🚫 Blockierte Nutzer</button><div id="users"></div><div id="blockedUsers" class="hidden"></div></section><section id="onlineSection" class="hidden"><h3>🟢 Wer ist online?</h3><div id="onlineUsers"></div></section><section id="matchesSection" class="hidden"><h3>❤️ Matches</h3><div id="matches"></div></section></aside>
-<main class="main"><div class="top"><button id="backChat" class="secondary backChat">←</button><div><strong id="chatTitle">Lounge</strong><div id="chatSubtitle" class="small muted"></div></div><span id="status" class="muted">Verbinde…</span></div><div id="messages" class="messages"></div><div class="composer"><label><input id="chatFile" class="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="photoBtn">📷</button></label><input id="text" placeholder="Nachricht…"><button id="send">Senden</button></div></main>
+<aside id="side" class="side"><h2>ChatiNova</h2><p id="meLabel" class="muted"></p><div style="display:flex;gap:6px"><button id="editProfileBtn" class="secondary">✏️ Profil bearbeiten</button><button id="logout" class="secondary">Abmelden</button></div><nav class="nav"><button id="showRooms">💬 &nbsp;Chat</button><button id="showUsers" class="secondary">👥 &nbsp;Benutzer</button><button id="showChats" class="secondary">✉️ &nbsp;Chats <span id="chatBadge" class="small"></span></button><button id="showOnline" class="secondary">🟢 &nbsp;Online</button><button id="showMatches" class="secondary">❤️ &nbsp;Matches</button></nav><section id="chatListSection" class="hidden"><h3>✉️ Nachrichten</h3><div id="chatList" class="chatList"></div></section><section id="roomSection"><h3>💬 Räume</h3><div id="rooms" class="rooms"></div></section><section id="userSection" class="hidden"><h3>👥 Benutzer</h3><input id="search" placeholder="Benutzer suchen"><button id="showBlocked" class="secondary" style="width:100%;margin:4px 0 8px">🚫 Blockierte Nutzer</button><div id="users"></div><div id="blockedUsers" class="hidden"></div></section><section id="onlineSection" class="hidden"><h3>🟢 Wer ist online?</h3><div id="onlineUsers"></div></section><section id="matchesSection" class="hidden"><h3>❤️ Matches</h3><div id="matches"></div></section></aside>
+<main class="main"><div class="top"><button id="backChat" class="secondary backChat">←</button><div class="chatHeader"><img id="chatHeaderAvatar" class="chatHeaderAvatar" src="" alt=""><div><div id="chatTitle" class="chatHeaderTitle">ChatiNova</div><div id="chatSubtitle" class="small muted"></div></div></div><span id="status" class="muted">Verbinde…</span></div><div id="messages" class="messages"></div><div class="composer"><label><input id="chatFile" class="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="photoBtn">📷</button></label><input id="text" placeholder="Nachricht…"><button id="send">Senden</button></div></main>
 <aside id="profilePanel" class="profile"><button id="profileClose" class="secondary profileClose">← Zurück</button><div id="myProfile"><h3>Mein Profil</h3><img id="avatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"><p><b id="profileNick"></b></p><div style="margin:14px 0;padding:14px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc"><h4 style="margin:0 0 8px">Profil bearbeiten</h4><label class="small muted">Alter</label><input id="profileAge" type="number" min="18" max="99" placeholder="Alter"><label class="small muted">Bundesland</label><select id="profileState" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;margin:7px 0 12px"><option value="">Bundesland auswählen</option><option>Baden-Württemberg</option><option>Bayern</option><option>Berlin</option><option>Brandenburg</option><option>Bremen</option><option>Hamburg</option><option>Hessen</option><option>Mecklenburg-Vorpommern</option><option>Niedersachsen</option><option>Nordrhein-Westfalen</option><option>Rheinland-Pfalz</option><option>Saarland</option><option>Sachsen</option><option>Sachsen-Anhalt</option><option>Schleswig-Holstein</option><option>Thüringen</option></select><label class="small muted">Über mich</label><textarea id="profileAbout" maxlength="1000" placeholder="Erzähl etwas über dich…"></textarea><button id="saveProfile">💾 Profil speichern</button></div><input id="avatarFile" class="file" type="file" accept="image/*"><button class="secondary" id="avatarBtn">Profilbild ändern</button><h4>Meine Galerie</h4><input id="galleryFile" class="file" type="file" multiple accept="image/*"><button class="secondary" id="galleryBtn">Bilder hinzufügen</button><div id="gallery" class="gallery" style="margin-top:10px"></div><hr><button id="deleteAccount" class="danger">Konto löschen</button><div id="adminPanel" class="hidden"><hr><h3>🛡️ Moderation</h3><div id="reports"></div></div></div><div id="userProfile" class="hidden"><div class="profileHero"><div class="profileHead"><img id="userAvatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"></div><h3 id="userProfileTitle" class="profileName">Profil</h3><div id="userInfo" class="profileInfo"></div><div id="userStatus" class="profileStatus"></div><p id="userAbout" class="profileAbout"></p></div><div class="profileActions"><button id="dmBtn">💬 Nachricht</button><button id="favBtn" class="secondary">⭐ Favorisieren</button><button id="blockBtn" class="danger">🚫 Blockieren</button><button id="reportUserBtn" class="secondary">⚠️ Melden</button></div><div class="profileSection"><h4>Galerie</h4><div id="userGallery" class="gallery"></div></div></div></aside>
 </section>
 <script>
@@ -49,12 +294,12 @@ function hideLegal(){$("legal").classList.add("hidden");$("auth").classList.remo
 $("toggle").onclick=()=>{register=!register;$("regFields").classList.toggle("hidden",!register);$("consentWrap").classList.toggle("hidden",!register);$("submit").textContent=register?"Registrieren":"Einloggen";$("toggle").textContent=register?"Zum Login":"Noch nicht registriert"};
 $("submit").onclick=async()=>{try{const body={nick:$("nick").value,password:$("password").value};if(register){if(!$("consent").checked)throw Error("Bitte bestätige Nutzungsregeln und Datenschutzhinweise.");body.age=Number($("age").value);body.state=$("state").value}const d=await fetch(register?"/api/register":"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json().then(x=>{if(!r.ok)throw Error(x.error);return x}));token=d.token;localStorage.setItem("chatinova_token",token);start()}catch(e){err(e)}};
 async function start(){try{me=await api("/api/me");$("auth").classList.add("hidden");$("app").classList.remove("hidden");$("meLabel").textContent=me.nick+" · "+me.age;$("profileNick").textContent=me.nick;fillMyProfile(me);setAvatar(me.avatar_url);$("adminPanel").classList.toggle("hidden",!me.is_admin);if(me.is_admin)loadReports();await loadRooms();await loadUsers();await loadDmList();await loadGallery();roomId=1;roomName="Lounge";dmUser=null;showSidebarSection("rooms");$("chatTitle").textContent="ChatiNova";$("chatSubtitle").textContent="Wähle einen Bereich";$("backChat").style.display="none";$("messages").innerHTML="<div class=\"muted\" style=\"padding:20px;text-align:center\">Wähle links einen Raum oder öffne einen Bereich über die Navigation.</div>";connect()}catch(e){localStorage.removeItem("chatinova_token");$("error").textContent="Sitzung abgelaufen."}}
-function setAvatar(u){me.avatar_url=u||"";$("avatar").src=u||avatarFallback()}
+function setAvatar(u){me.avatar_url=u||"";$("avatar").src=u||avatarFallback();$("chatHeaderAvatar").src=u||avatarFallback()}
 async function loadDmList(){try{const cs=await api("/api/dms");const unread=cs.reduce((n,c)=>n+Number(c.unread_count||0),0);$("chatBadge").textContent=unread?"🔴 "+unread:"";$("chatList").innerHTML=cs.length?cs.map(c=>`<div class="chatItem" data-id="${c.user_id}"><img class="chatAvatar" src="${c.avatar_url||avatarFallback()}"><div class="chatText"><b>${esc(c.nick)} ${c.unread_count?'<span class="small">🔴 '+c.unread_count+'</span>': ''} <span class="small">${c.online?"🟢":""}</span></b><span class="preview small muted">${esc(c.image_url?"📷 Bild":c.text||"Noch keine Nachricht")}</span></div></div>`).join(""):`<span class="small muted">Noch keine Privatchats.</span>`;document.querySelectorAll(".chatItem").forEach(x=>x.onclick=()=>openDm(Number(x.dataset.id)))}catch(e){console.error(e)}}
 let roomNotifications={};
 async function loadRoomNotifications(){try{const ns=await api("/api/room-notifications");roomNotifications={};ns.forEach(n=>roomNotifications[n.room_id]=n.has_new)}catch(e){console.error(e)}}
 async function loadRooms(){const rs=await api("/api/rooms");await loadRoomNotifications();$("rooms").innerHTML=rs.map(r=>'<div class="room" data-id="'+r.id+'">💬 '+r.name+' '+(roomNotifications[r.id]?'🔴':'')+'</div>').join("");document.querySelectorAll(".room").forEach(x=>x.onclick=()=>joinRoom(Number(x.dataset.id),x.textContent.replace('🔴','').trim()))}
-async function joinRoom(id,name){previousSection="rooms";dmUser=null;roomId=id;roomName=name;$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");selectedUser=null;$("profilePanel").classList.remove("profileOpen");showSidebarSection("rooms");$("side").classList.remove("browseMode");$("side").classList.add("mobileChatMode");$("chatSubtitle").textContent="Öffentlicher Raum";$("backChat").style.display="inline-block";$("text").placeholder="Nachricht…";$("chatTitle").textContent=name;$("messages").innerHTML="";const ms=await api("/api/rooms/"+id+"/messages");ms.forEach(renderRoom);roomNotifications[id]=false;await api("/api/rooms/"+id+"/read",{method:"POST"});await loadRooms();if(ws?.readyState===1)ws.send(JSON.stringify({type:"join_room",roomId:id}))}
+async function joinRoom(id,name){previousSection="rooms";dmUser=null;roomId=id;roomName=name;$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");selectedUser=null;$("profilePanel").classList.remove("profileOpen");showSidebarSection("rooms");$("side").classList.remove("browseMode");$("side").classList.add("mobileChatMode");$("chatSubtitle").textContent="Öffentlicher Raum";$("chatHeaderAvatar").src=avatarFallback();$("backChat").style.display="inline-block";$("text").placeholder="Nachricht…";$("chatTitle").textContent=name;$("messages").innerHTML="";const ms=await api("/api/rooms/"+id+"/messages");ms.forEach(renderRoom);roomNotifications[id]=false;await api("/api/rooms/"+id+"/read",{method:"POST"});await loadRooms();if(ws?.readyState===1)ws.send(JSON.stringify({type:"join_room",roomId:id}))}
 let usersCache=[];async function loadUsers(){
   const q=$("search").value||"";
   const [us,favs]=await Promise.all([api("/api/users?q="+encodeURIComponent(q)),api("/api/favorites")]);
@@ -148,7 +393,7 @@ function renderUserCollection(target,list,type){
 }
 
 let previousSection="rooms"; function showSidebarSection(section){$("roomSection").classList.toggle("hidden",section!=="rooms");$("userSection").classList.toggle("hidden",section!=="users");$("chatListSection").classList.toggle("hidden",section!=="chats");$("onlineSection").classList.toggle("hidden",section!=="online");$("matchesSection").classList.toggle("hidden",section!=="matches");$("showRooms").classList.toggle("secondary",section!=="rooms");$("showUsers").classList.toggle("secondary",section!=="users");$("showChats").classList.toggle("secondary",section!=="chats");$("showOnline").classList.toggle("secondary",section!=="online");$("showMatches").classList.toggle("secondary",section!=="matches");$("side").classList.remove("browseMode","mobileChatMode");if(section==="online")loadOnline();if(section==="matches")loadMatches()}$("search").oninput=()=>loadUsers(); $("showBlocked").onclick=()=>{if($("blockedUsers").classList.contains("hidden"))loadBlockedUsers();else showNormalUsers()};let usersRefreshTimer=null;let roomRefreshTimer=null;function startUsersRefresh(){if(usersRefreshTimer)clearInterval(usersRefreshTimer);usersRefreshTimer=setInterval(()=>{if(token&&$("app")&&!$("app").classList.contains("hidden")){loadUsers().catch(()=>{});if(!$("onlineSection").classList.contains("hidden"))loadOnline().catch(()=>{});if(!$("matchesSection").classList.contains("hidden"))loadMatches().catch(()=>{})}},15000)}startUsersRefresh();roomRefreshTimer=setInterval(()=>{if(token&&$("app")&&!$("app").classList.contains("hidden"))loadRooms().catch(()=>{})},15000);$("showUsers").onclick=()=>showSidebarSection("users");$("showRooms").onclick=()=>showSidebarSection("rooms");$("showChats").onclick=()=>showSidebarSection("chats");$("showOnline").onclick=()=>showSidebarSection("online");$("showMatches").onclick=()=>showSidebarSection("matches");$("backChat").onclick=()=>{$("backChat").style.display="none";dmUser=null;$("side").classList.remove("mobileChatMode","browseMode");showSidebarSection(previousSection);$("text").placeholder="Nachricht…";$("chatTitle").textContent="ChatiNova";$("chatSubtitle").textContent="Wähle einen Bereich";$("messages").innerHTML="<div class=\"muted\" style=\"padding:20px;text-align:center\">Wähle links einen Raum oder öffne einen Bereich über die Navigation.</div>"};
-async function openDm(id){previousSection=$("chatListSection").classList.contains("hidden")?($("userSection").classList.contains("hidden")?"rooms":"users"):"chats";dmUser=id;$("profilePanel").classList.remove("profileOpen");$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");$("side").classList.remove("browseMode");$("side").classList.add("mobileChatMode");const u=usersCache.find(x=>String(x.id)===String(id))||{nick:"Benutzer"};$("chatTitle").textContent="💬 Privatchat";$("chatSubtitle").textContent=(u.online?"🟢 Online · ":"")+"mit "+u.nick;$("backChat").style.display="inline-block";$("text").placeholder="Nachricht an "+(u.nick||"Benutzer")+"…";$("messages").innerHTML="";try{const ms=await api("/api/dm/"+id);ms.forEach(renderDm);await api("/api/dm/"+id+"/read",{method:"POST"});await loadDmList()}catch(e){alert(e.message)}}
+async function openDm(id){previousSection=$("chatListSection").classList.contains("hidden")?($("userSection").classList.contains("hidden")?"rooms":"users"):"chats";dmUser=id;$("profilePanel").classList.remove("profileOpen");$("userProfile").classList.add("hidden");$("myProfile").classList.remove("hidden");$("side").classList.remove("browseMode");$("side").classList.add("mobileChatMode");const u=usersCache.find(x=>String(x.id)===String(id))||{nick:"Benutzer"};$("chatTitle").textContent=u.nick||"Privatchat";$("chatSubtitle").textContent=(u.online?"🟢 Online · ":"")+"Privatchat";$("chatHeaderAvatar").src=u.avatar_url||avatarFallback();$("backChat").style.display="inline-block";$("text").placeholder="Nachricht an "+(u.nick||"Benutzer")+"…";$("messages").innerHTML="";try{const ms=await api("/api/dm/"+id);ms.forEach(renderDm);await api("/api/dm/"+id+"/read",{method:"POST"});await loadDmList()}catch(e){alert(e.message)}}
 function connect(){const p=location.protocol==="https:"?"wss":"ws";ws=new WebSocket(p+"://"+location.host+"?token="+encodeURIComponent(token));ws.onopen=()=>{$("status").textContent="Online";ws.send(JSON.stringify({type:"join_room",roomId}));};ws.onclose=()=>{$("status").textContent="Offline";setTimeout(connect,2500)};ws.onmessage=e=>{const x=JSON.parse(e.data);if(x.type==="room_message")renderRoom(x.message);if(x.type==="dm"){renderDm(x.message);loadDmList()}if(x.type==="message_deleted")removeMessage(x.messageId,x.messageType)}}
 function renderRoom(m){if(dmUser)return;addMsg(m.nick,m.text,m.nick===me.nick,m.image_url,m.id,"room")}
 function renderDm(m){
@@ -177,8 +422,7 @@ $("saveProfile").onclick=async()=>{try{const d=await api("/api/me",{method:"PUT"
     return blob?new File([blob],"photo.jpg",{type:"image/jpeg"}):file;
   }catch(e){return file}
 }
-async function upload(file,endpoint,field="image"){
-  if(!file)throw Error("Bitte ein Bild auswählen.");
+async function upload(file,endpoint,field="image"){  if(!file)throw Error("Bitte ein Bild auswählen.");
   const prepared=await prepareUploadImage(file);
   const f=new FormData();f.append(field,prepared,prepared.name||file.name);
   return api(endpoint,{method:"POST",body:f})
