@@ -190,11 +190,44 @@ button.danger{background:rgba(255,67,112,.10);border-color:rgba(255,91,130,.42);
 .profile .profileActions{display:grid;grid-template-columns:1fr;gap:8px;margin:14px 0}
 .profile .profileActions button:first-child{grid-column:auto}
 .profile .profileSection{
- margin-top:18px;padding:15px;border:1px solid var(--line);border-radius:18px;
- background:rgba(12,25,53,.58)
+ margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:18px;
+ background:linear-gradient(145deg,rgba(15,30,63,.72),rgba(8,18,39,.62));
+ box-shadow:0 12px 32px rgba(0,0,0,.16)
 }
-.profile .profileSection h4{margin:0 0 10px}
+.profile .profileSection h4{margin:0 0 11px;font-size:15px}
 .profile button{padding:11px 12px}
+.myProfileCard{max-width:100%}
+.myProfileHero{
+ position:relative;text-align:center;padding:22px 16px 18px;margin-bottom:14px;
+ border:1px solid var(--lineStrong);border-radius:22px;
+ background:radial-gradient(circle at 50% 0%,rgba(112,72,255,.22),transparent 48%),linear-gradient(145deg,rgba(18,35,74,.92),rgba(8,18,40,.82));
+ overflow:hidden;box-shadow:0 16px 42px rgba(0,0,0,.22)
+}
+.myProfileHero:before{
+ content:"";position:absolute;inset:-80px auto auto 50%;width:180px;height:180px;
+ transform:translateX(-50%);border-radius:50%;background:rgba(36,227,208,.08);filter:blur(35px);pointer-events:none
+}
+.myProfileHero .avatar{
+ position:relative;width:108px;height:108px;margin:0 auto 12px;border:3px solid #704cff;
+ box-shadow:0 0 30px rgba(102,67,255,.48)
+}
+.myProfileNick{font-family:'Space Grotesk';font-size:22px;font-weight:700;margin:0}
+.myProfileHint{font-size:12px;color:#8e9bc0;margin:5px 0 0}
+.profileEditCard{
+ padding:16px;border:1px solid var(--line);border-radius:20px;
+ background:rgba(10,23,49,.68);box-shadow:0 12px 32px rgba(0,0,0,.16)
+}
+.profileEditCard h4{font-size:16px;margin:0 0 3px}
+.profileEditCard .editIntro{font-size:12px;color:var(--muted);margin:0 0 14px}
+.profileField{margin-top:11px}
+.profileField label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7f8fb8;font-weight:700;margin:0 0 5px}
+.profileField input,.profileField select,.profileField textarea{margin:0}
+.profileField textarea{min-height:100px;resize:vertical}
+.profileSave{width:100%;margin-top:5px}
+.profileMediaActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.profileMediaActions button{width:100%}
+.profileDanger{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.profileDanger button{width:100%}
 .avatar{width:94px;height:94px;border-radius:50%;object-fit:cover;background:#17284f;display:block}
 .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .gallery img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:11px;border:1px solid var(--line)}
@@ -288,7 +321,7 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 <section id="app" class="app hidden">
 <aside id="side" class="side"><h2>ChatiNova</h2><p id="meLabel" class="muted"></p><div style="display:flex;gap:6px"><button id="editProfileBtn" class="secondary">✏️ Profil bearbeiten</button><button id="logout" class="secondary">Abmelden</button></div><nav class="nav"><button id="showUsers" class="secondary">👥 &nbsp;Benutzer</button><button id="showRooms" class="secondary">💬 &nbsp;Chaträume</button><button id="showChats" class="secondary">✉️ &nbsp;Chats <span id="chatBadge" class="small"></span></button><button id="showOnline" class="secondary">🟢 &nbsp;Online</button><button id="showMatches" class="secondary">❤️ &nbsp;Matches</button></nav><section id="chatListSection" class="hidden"><h3>✉️ Nachrichten</h3><div id="chatList" class="chatList"></div></section><section id="roomSection" class="hidden"><h3>💬 Chaträume</h3><div id="rooms" class="rooms"></div></section><section id="userSection" class="hidden"><h3>👥 Benutzer</h3><input id="search" placeholder="Benutzer suchen"><button id="showBlocked" class="secondary" style="width:100%;margin:4px 0 8px">🚫 Blockierte Nutzer</button><div id="users"></div><div id="blockedUsers" class="hidden"></div></section><section id="onlineSection" class="hidden"><h3>🟢 Wer ist online?</h3><div id="onlineUsers"></div></section><section id="matchesSection" class="hidden"><h3>❤️ Matches</h3><div id="matches"></div></section></aside>
 <main class="main"><div class="top"><button id="backChat" class="secondary backChat">←</button><div class="chatHeader"><img id="chatHeaderAvatar" class="chatHeaderAvatar" src="" alt=""><div><div id="chatTitle" class="chatHeaderTitle">ChatiNova</div><div id="chatSubtitle" class="small muted"></div></div></div><span id="status" class="muted">Online</span></div><div id="homeView" class="homeView"><div class="homeGlow"></div><div class="homeContent"><div class="homeEyebrow">✦ Willkommen bei ChatiNova</div><h1>Entdecke neue Menschen.</h1><p>Durchsuche Profile, sieh wer gerade online ist und finde deine Matches. Private Chats öffnest du direkt über ein Profil.</p><div class="homeActions"><button id="homeUsersBtn">👥 Benutzer entdecken</button><button id="homeOnlineBtn" class="secondary">🟢 Jetzt online</button></div></div></div><div id="messages" class="messages hidden"></div><div class="composer hidden"><label><input id="chatFile" class="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="secondary" id="photoBtn">📷</button></label><input id="text" placeholder="Nachricht…"><button id="send">Senden</button></div></main>
-<aside id="profilePanel" class="profile"><button id="profileClose" class="secondary profileClose">← Zurück</button><div id="myProfile"><h3>Mein Profil</h3><img id="avatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"><p><b id="profileNick"></b></p><div style="margin:14px 0;padding:14px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc"><h4 style="margin:0 0 8px">Profil bearbeiten</h4><label class="small muted">Alter</label><input id="profileAge" type="number" min="18" max="99" placeholder="Alter"><label class="small muted">Bundesland</label><select id="profileState" style="width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;margin:7px 0 12px"><option value="">Bundesland auswählen</option><option>Baden-Württemberg</option><option>Bayern</option><option>Berlin</option><option>Brandenburg</option><option>Bremen</option><option>Hamburg</option><option>Hessen</option><option>Mecklenburg-Vorpommern</option><option>Niedersachsen</option><option>Nordrhein-Westfalen</option><option>Rheinland-Pfalz</option><option>Saarland</option><option>Sachsen</option><option>Sachsen-Anhalt</option><option>Schleswig-Holstein</option><option>Thüringen</option></select><label class="small muted">Über mich</label><textarea id="profileAbout" maxlength="1000" placeholder="Erzähl etwas über dich…"></textarea><button id="saveProfile">💾 Profil speichern</button></div><input id="avatarFile" class="file" type="file" accept="image/*"><button class="secondary" id="avatarBtn">Profilbild ändern</button><h4>Meine Galerie</h4><input id="galleryFile" class="file" type="file" multiple accept="image/*"><button class="secondary" id="galleryBtn">Bilder hinzufügen</button><div id="gallery" class="gallery" style="margin-top:10px"></div><hr><button id="deleteAccount" class="danger">Konto löschen</button><div id="adminPanel" class="hidden"><hr><h3>🛡️ Moderation</h3><div id="reports"></div></div></div><div id="userProfile" class="hidden"><div class="profileHero"><div class="profileHead"><img id="userAvatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"></div><h3 id="userProfileTitle" class="profileName">Profil</h3><div id="userInfo" class="profileInfo"></div><div id="userStatus" class="profileStatus"></div><p id="userAbout" class="profileAbout"></p></div><div class="profileActions"><button id="dmBtn">💬 Nachricht</button><button id="favBtn" class="secondary">⭐ Favorisieren</button><button id="blockBtn" class="danger">🚫 Blockieren</button><button id="reportUserBtn" class="secondary">⚠️ Melden</button></div><div class="profileSection"><h4>Galerie</h4><div id="userGallery" class="gallery"></div></div></div></aside>
+<aside id="profilePanel" class="profile"><button id="profileClose" class="secondary profileClose">← Zurück</button><div id="myProfile" class="myProfileCard"><div class="myProfileHero"><img id="avatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"><p id="profileNick" class="myProfileNick"></p><p class="myProfileHint">Dein öffentliches Profil</p></div><div class="profileEditCard"><h4>Profil bearbeiten</h4><p class="editIntro">Passe deine Angaben an, damit andere dich besser kennenlernen.</p><div class="profileField"><label for="profileAge">Alter</label><input id="profileAge" type="number" min="18" max="99" placeholder="Alter"></div><div class="profileField"><label for="profileState">Bundesland</label><select id="profileState"><option value="">Bundesland auswählen</option><option value="">Bundesland auswählen</option><option>Baden-Württemberg</option><option>Bayern</option><option>Berlin</option><option>Brandenburg</option><option>Bremen</option><option>Hamburg</option><option>Hessen</option><option>Mecklenburg-Vorpommern</option><option>Niedersachsen</option><option>Nordrhein-Westfalen</option><option>Rheinland-Pfalz</option><option>Saarland</option><option>Sachsen</option><option>Sachsen-Anhalt</option><option>Schleswig-Holstein</option><option>Thüringen</option></select></div><div class="profileField"><label for="profileAbout">Über mich</label><textarea id="profileAbout" maxlength="1000" placeholder="Erzähl etwas über dich…"></textarea></div><button id="saveProfile" class="profileSave">💾 Profil speichern</button></div><div class="profileMediaActions"><input id="avatarFile" class="file" type="file" accept="image/*"><button class="secondary" id="avatarBtn">📷 Profilbild</button><input id="galleryFile" class="file" type="file" multiple accept="image/*"><button class="secondary" id="galleryBtn">🖼️ Galerie</button></div><div class="profileSection"><h4>Meine Galerie</h4><div id="gallery" class="gallery"></div></div><div class="profileDanger"><button id="deleteAccount" class="danger">🗑️ Konto löschen</button></div><div id="adminPanel" class="hidden"><hr><h3>🛡️ Moderation</h3><div id="reports"></div></div></div><div id="userProfile" class="hidden"><div class="profileHero"><div class="profileHead"><img id="userAvatar" class="avatar" alt="" onerror="this.onerror=null;this.src=avatarFallback()"></div><h3 id="userProfileTitle" class="profileName">Profil</h3><div id="userInfo" class="profileInfo"></div><div id="userStatus" class="profileStatus"></div><p id="userAbout" class="profileAbout"></p></div><div class="profileActions"><button id="dmBtn">💬 Nachricht</button><button id="favBtn" class="secondary">⭐ Favorisieren</button><button id="blockBtn" class="danger">🚫 Blockieren</button><button id="reportUserBtn" class="secondary">⚠️ Melden</button></div><div class="profileSection"><h4>Galerie</h4><div id="userGallery" class="gallery"></div></div></div></aside>
 </section>
 <script>
 let token=localStorage.getItem("chatinova_token"), me=null, ws=null, roomId=1, roomName="Lounge", dmUser=null, register=false, selectedUser=null;
